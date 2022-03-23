@@ -1,31 +1,31 @@
 #install.packages("xlsx")
-#library(xlsx) => xlsx ÆÐÅ°Áö´Â ÀÚ¹Ù°¡ ¼³Ä¡µÇ¾î¾ßÇÔÇÔ
+#library(xlsx) => xlsx ï¿½ï¿½Å°ï¿½ï¿½ï¿½ï¿½ ï¿½Ú¹Ù°ï¿½ ï¿½ï¿½Ä¡ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 file <- choose.files() #file open
-#popData <- read.xlsx(file, 1, encoding = "UTF-8") => ¿¢¼¿ ÆÄÀÏÀ» ºÒ·¯¿Ã¶§
+#popData <- read.xlsx(file, 1, encoding = "UTF-8") => ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò·ï¿½ï¿½Ã¶ï¿½
 popData <- read.csv(file, header=T)
 class(popData)
 popData$area = factor(popData$area, levels = c(1:7),
-                      labels = c("¼öµµ±Ç", "µ¿³²±Ç","´ë°æ±Ç", "ÃæÃ»±Ç", "Àü¶ó±Ç", "°­¿ø±Ç", "Á¦ÁÖµµ")) #¼ø¼­´ë·Î ÀÌ¸§ ¶óº§¸µ¸µ
+                      labels = c("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½", "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½","ï¿½ï¿½ï¿½ï¿½", "ï¿½ï¿½Ã»ï¿½ï¿½", "ï¿½ï¿½ï¿½ï¿½ï¿½", "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½", "ï¿½ï¿½ï¿½Öµï¿½")) #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ ï¿½óº§¸ï¿½ï¿½ï¿½
 popData
-
+## data1.csv file open í•˜ê³  class(popData)í•˜ë©´ data.frameì´ ë‚˜ì˜¨ë‹¤
 
 ###########################################
-# query ¹®À» Áö¿øÇÔ ) sqldf
+# query ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ) sqldf
 ##########################################
 install.packages("sqldf")
 library(sqldf)
-data(iris)	#³»Àåµ¥ÀÌÅÍ ºÒ·¯¿À±â
-str(iris) #µ¥ÀÌÅÍ±¸Á¶È®ÀÎ
+data(iris)	#ï¿½ï¿½ï¿½åµ¥ï¿½ï¿½ï¿½ï¿½ ï¿½Ò·ï¿½ï¿½ï¿½ï¿½ï¿½
+str(iris) #ï¿½ï¿½ï¿½ï¿½ï¿½Í±ï¿½ï¿½ï¿½È®ï¿½ï¿½
 sqldf("select Species
       from iris
       where Species='setosa'")
-iris.sql = sqldf("select distinct Species from iris") #distinct ÇÏ¸é Áßº¹µÈ °ªÀº Á¦¿ÜÇÏ°í ³ª¿È¿È
+iris.sql = sqldf("select distinct Species from iris") #distinct ï¿½Ï¸ï¿½ ï¿½ßºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½È¿ï¿½
 iris.sql
 sqldf("select * from iris where Species='virginica'")
 sqldf('select Species, sum("Sepal.Length") as SepalLength from iris group by Species')
 sqldf('select Species, avg("Petal.Length") as avg, stdev("Petal.Length") as sd from iris group by Species')
 
-#±Ç¿ªº° ÀÎ±¸¼ö
+#ï¿½Ç¿ï¿½ï¿½ï¿½ ï¿½Î±ï¿½ï¿½ï¿½
 pop.area <- sqldf("select area, sum(pop10) as area10, sum(pop18) as area18 from popData group by area")
 tot10 <- sum(pop.area$area10)
 tot18 <- sum(pop.area$area18)
@@ -105,40 +105,46 @@ by(warpbreaks[, 1:2], warpbreaks[,"tension"], summary)
 by(warpbreaks[, 1],   warpbreaks[, -1],       summary)
 
 ###########################################
-# plyr  ÆäÅ°Áö »ç¿ë  split->apply->combine
+# plyr  ï¿½ï¿½Å°ï¿½ï¿½ ï¿½ï¿½ï¿½  split->apply->combine
 ###########################################
 # dd? 
-library(plyr) #¸Þ¸ð¸®¸¦ »ç¿ëÇÔ
-data("baseball") #µ¥ÀÌÅÍ ºÒ·¯¿À±â
+library(plyr) #ï¿½Þ¸ð¸®¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
+data("baseball") #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò·ï¿½ï¿½ï¿½ï¿½ï¿½
 class(baseball)
 dim(baseball)
 result = ddply(baseball, .(id), summarise, avg_g=mean(g, na.rm=T))
 head(result, 3)
-result1 = ddply(baseball, .(id), summarise, minG = min(g,na.rm=T ), maxG=max(g, na.rm=T)) #.(id)´Â ±âÁØÇÊµå
+result1 = ddply(baseball, .(id), summarise, minG = min(g,na.rm=T ), maxG=max(g, na.rm=T)) #.(id)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½
 head(result1, 3)
-result2 = ddply(baseball, .(id, team), summarise, minG = min(g,na.rm=T ), maxG=max(g, na.rm=T)) #.(id)´Â ±âÁØÇÊµå
-# ±âÁØÀÌ ¿©·¯°³ ÀÖÀ» °æ¿ì .(id, team, ....), ¿ä¾à
+result2 = ddply(baseball, .(id, team), summarise, minG = min(g,na.rm=T ), maxG=max(g, na.rm=T)) #.(id)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½
+# ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ .(id, team, ....), ï¿½ï¿½ï¿½
 head(result2)
-result2 = ddply(baseball, .(id), transform, minYear = min(year,na.rm=T )) #tranformÀº ¿ä¾àÀÌ ¾Æ´Ï¶ó µÚ¿¡ Ãß°¡
+result2 = ddply(baseball, .(id), transform, minYear = min(year,na.rm=T )) #tranformï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´Ï¶ï¿½ ï¿½Ú¿ï¿½ ï¿½ß°ï¿½
 result2[1, c(1,23)] 
 dd<-ddply( baseball , .( id ) , subset , g == max( g ) )
 dd
-#id ±âÁØÀ¸·Î gÀÇ ÃÖ´ë°ª ±¸ÇÏ±â
+#id ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gï¿½ï¿½ ï¿½Ö´ë°ª ï¿½ï¿½ï¿½Ï±ï¿½
+
+
+### ì¸êµ¬ ë°ì´í„°ë¥¼ ì´ìš©í•˜ì—¬ ì¸êµ¬ë¥¼ ê³„ì‚° ###
+library(plyr)#íŒ¨í‚¤ì§€ ë¡œë“œí•˜ê¸°
+pop <- ddply(popData, .(area), summarise, pop.a10=sum(pop10, na.rm=T), pop.a18=sum(pop18,na.rm=T),
+                        grdp.a10=sum(grdp10, na.rm=T, grdp.a18=sum(grdp18))
 
 
 ###########################################
-# ÀÚ·áÀÇ ÇüÅÂ¸¦ ¹Ù²Þ / reshape2(melt, cast)
+# ï¿½Ú·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½Ù²ï¿½ / reshape2(melt, cast)
 #############################################
 
 library( reshape2 )
 data(smiths)
 smiths
-m = melt( id =1:2 , smiths )	#µ¥ÀÌÅÍÇüÅÂ º¯°æÇÏ±â id=1:2 ±âÁØ(1,2¿­)
-x = dcast(m , subject + time~... ) #¿ø·¡´ë·Î ÀüÈ¯
+m = melt( id =1:2 , smiths )	#ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ id=1:2 ï¿½ï¿½ï¿½ï¿½(1,2ï¿½ï¿½)
+x = dcast(m , subject + time~... ) #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
 
 
 ##################################################
-#data.table (¼Óµµ¸¦ ³ô¿©ÁÜ)
+#data.table (ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 ##################################################
 library(data.table)
 DF = data.frame( x = runif(520000) , 
