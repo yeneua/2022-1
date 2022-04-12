@@ -1,11 +1,11 @@
 #install.packages("xlsx")
 #library(xlsx) => xlsx #xlsx패키지는 자바가 설치되어야 함
-file <- choose.files() #file open
+file <- choose.files() #file open #data.csv 불러오기기
 #popData <- read.xlsx(file, 1, encoding = "UTF-8") => 엑셀 파일을 불러올 때
 popData <- read.csv(file, header=T)
 class(popData)
 popData$area = factor(popData$area, levels = c(1:7),
-                      labels = c("수도권","동남권","충청권","전라권","강원권","제주도")) #순서대로 이름 라벨링링 
+                      labels = c("수도권","동남권","대경권","충청권","전라권","강원권","제주도")) #순서대로 이름 라벨링링 
 popData
 
 
@@ -32,7 +32,9 @@ sqldf('select Species, avg("Petal.Length") as avg, stdev("Petal.Length") as sd
       group by Species')
 
 #권역별 인구수
-pop.area <- sqldf("select area, sum(pop10) as area10, sum(pop18) as area18 from popData group by area")
+pop.area <- sqldf("select area, sum(pop10) as area10, sum(pop18) as area18
+                  from popData
+                  group by area")
 tot10 <- sum(pop.area$area10)
 tot18 <- sum(pop.area$area18)
 pop.pnt10 <- pop.area$area10/tot10*100 #vector
@@ -51,9 +53,11 @@ pop.area1 <- cbind(pop.area,pop.pnt10,pop.pnt18)
 x <- cbind(x1 = 3, x2 = c(4:1, 2:5))
 dimnames(x)[[1]] <- letters[1:8]
 x[[1]]
+x
 
-
-
+apply(x, 1, mean) #x를 행(1)별로 mean
+apply(x, 2, sort) #열별로 오름차순 정렬
+apply(x, 2, sort(decreasing = TRUE))
 row.sums <- apply(x, 1, sum)
 row.sums
 col.sums <- apply(x, 2, sum)
@@ -71,14 +75,17 @@ x <- list(a = 1:10, beta = exp(-3:3), logic = c(TRUE,FALSE,FALSE,TRUE))
 x
 
 # compute the list mean for each list element
-lapply(x, mean)
+lapply(x, mean) #lapply : list 형태로 리턴
 
 # median and quartiles for each list element
 lapply(x, quantile, probs = 1:3/4)
-sapply(x, quantile)
+sapply(x, quantile) #리턴값: vector, matrix
+class(sapply(x, quantile)) #"matrix""array"
 
 sapply(x, class)
 
+
+### ????????? 몰겟어요 ㅠ ###
 i39 <- sapply(3:9, seq)    # list of vectors
 sapply(i39, fivenum)
 vapply(i39, fivenum,
@@ -88,7 +95,7 @@ vapply(i39, fivenum,
 
 ages <- c(25, 26, 55, 37, 21, 42)
 affils <- c("R", "D", "D", "R", "U", "D")
-tapply(ages, affils, mean)
+tapply(ages, affils, mean) #ages를 affils분류 기준에 맞춰 mean
 
 d <- data.frame(
   gender = c("M", "M", "F", "F", "M", "F"),
@@ -96,19 +103,32 @@ d <- data.frame(
   income = c(150, 300, 250, 350, 800, 120))
 d
 
-d$over25 <- ifelse(d$age > 25, 1, 0)
+d$over25 <- ifelse(d$age > 25, 1, 0) #d에 over25변수 추가, 25이상이면 1
 d
 
-tapply(d$income, list(d$gender, d$over25), mean)
-split(d$income, list(d$gender, d$over25))
+tapply(d$income, list(d$gender, d$over25), mean) #성별&over25별로 income평균
+split(d$income, list(d$gender, d$over25))#성별&over25별로 나누기(split)
 
+
+
+### ????????? 몰겟어요 ㅠ ###
 # by()
 
 head(warpbreaks)
 levels(warpbreaks$tension)
+str(warpbreaks)
 
 by(warpbreaks[, 1:2], warpbreaks[,"tension"], summary)
 by(warpbreaks[, 1],   warpbreaks[, -1],       summary)
+
+
+## 인구 데이터를 이용하여 권역별 합을 계산 ###
+?tapply
+
+tapply(pop.area$area10, pop.area$area,sum)
+class(tapply(pop.area$area10, pop.area$area,sum)) #array
+tapply(pop.area$area18, pop.area$area,sum)
+
 
 ###########################################
 # plyr 패키지 사용 split->apply->combine
@@ -118,17 +138,31 @@ library(plyr) #메모리를 사용함
 data("baseball") #데이터 불러오기기
 class(baseball)
 dim(baseball)
-result = ddply(baseball, .(id), summarise, avg_g=mean(g, na.rm=T))
+result = ddply(baseball,  #data
+               .(id),     #기준
+               summarise, #
+               avg_g=mean(g, na.rm=T)) #수식
 head(result, 3)
+class(result)  #data.frame
 result1 = ddply(baseball, .(id), summarise, minG = min(g,na.rm=T ), maxG=max(g, na.rm=T)) #.(id)는 기준필드
 head(result1, 3)
 result2 = ddply(baseball, .(id, team), summarise, minG = min(g,na.rm=T ), maxG=max(g, na.rm=T)) #.(id)는 기준필드
 # 기준이 여러개 있을 경우 .(id, team, ....), 요약
 head(result2)
-result2 = ddply(baseball, .(id), transform, minYear = min(year,na.rm=T )) #tranform은 요약이 아니라 뒤에 추가
-result2[1, c(1,23)] 
-dd<-ddply( baseball , .( id ) , subset , g == max( g ) )
+result3 = ddply(baseball, .(id), transform, minYear = min(year,na.rm=T )) #tranform은 요약이 아니라 뒤에 추가
+result3[1, c(1,23)] #첫번째행을. 첫번째, 마지막 열 값 가져오기
+dd<-ddply( baseball ,
+           .( id ) ,
+           subset , #subset : 분할(추출)
+           g == max( g ) ) #게임수가 최대게임수와같으면 출력
 dd
+dim(dd)
+dd1 <- ddply(baseball,
+             .(id, team),
+             subset,
+             g == max(g))
+dd1
+colnames(baseball)
 #id기준으로 g의 최대값 구하기
 
 
