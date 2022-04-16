@@ -62,8 +62,9 @@ sale <- read.csv(file,header=T)
 file1 <- choose.files() #file open
 cust <- read.csv(file1,header=T)
 ### data 정리
-sale <- rename(sale, cust_id = 癤풻ust_id)
-cust <- rename(cust, birth_data=癤풺irth_date)
+library(dplyr)
+sale <- rename(sale, cust_id = 癤풻ust_id) #sale.csv
+cust <- rename(cust, birth_data=癤풺irth_date) #custInfo.csv
 cust$sex_flg <- factor(cust$sex_flg, levels = c(1,2), labels=c("남자", "여자"))
 head(sale)
 head(cust)
@@ -94,7 +95,7 @@ hist(rfm$NoTransaction)
 quantile(rfm$t, probs = c(0.1, 0.2, 0.25, 0.4, 0.5, 0.6, 0.75, 0.8, 0.9,1))
 hist(rfm$t)
 #### rfm 점수
-rfm$Fscore <- with(rfm, ifelse(MeanValue>=9000000, 4, 
+rfm$Mscore <- with(rfm, ifelse(MeanValue>=9000000, 4, 
                                ifelse(MeanValue>=650000, 3,
                                       ifelse(MeanValue>=380000, 2,1))))
 
