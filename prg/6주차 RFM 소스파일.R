@@ -95,13 +95,13 @@ hist(rfm$NoTransaction) #F : 빈도
 quantile(rfm$t, probs = c(0.1, 0.2, 0.25, 0.4, 0.5, 0.6, 0.75, 0.8, 0.9,1))
 hist(rfm$t) #R:최근
 #### rfm 점수
-rfm$Mscore <- with(rfm, ifelse(MeanValue>=9000000, 4, 
+rfm$Mscore <- with(rfm, ifelse(MeanValue>=900000, 4, 
                                ifelse(MeanValue>=650000, 3,
                                       ifelse(MeanValue>=380000, 2,1))))
 
 rfm$Fscore <- with(rfm, ifelse(NoTransaction>=33, 4, 
                                ifelse(NoTransaction>=20, 3,
-                                      ifelse(MeanValue>=10, 2,1))))
+                                      ifelse(NoTransaction>=10, 2,1))))
 rfm$Rscore <- with(rfm, ifelse(t>=40, 1, 
                                ifelse(t>=25, 2,
                                       ifelse(t>=14, 3,4))))
@@ -121,3 +121,121 @@ if (!require(sqldf)){
 }
 sale_cust <- sqldf("select r.*, c.*  from rfm as r, cust as c where r.CustomerId=c.cust_id") #id로 조인, rfm과  cust의 모든 열 가져오기
 with(sale_cust, table(sale_cust$sex_flg, sale_cust$Class)) #성별, 클래스로 분할표
+
+
+with(sale_cust, table(sale_cust$enter_date, sale_cust$sex_flg))
+
+with(sale_cust, table(sale_cust$Class,sale_cust$sex_flg))
+with(sale_cust, table(sale_cust$enter_date,sale_cust$Class))
+with(sale_cust)
+
+
+
+boxplot(sale_cust$t ~ sale_cust$sex_flg)
+
+boxplot(sale_cust$t ~ sale_cust$Class)
+
+
+rfm$FinalScore <- rfm$Rscore*3+rfm$Fscore*2+rfm$Mscore*5 #가중치를 주어 finalscore
+boxplot(sale_cust$NoTransaction ~ sale_cust$Class)#등급 - F
+boxplot(sale_cust$t~sale_cust$Class) #등급- R(최근성)
+boxplot(sale_cust$MeanValue ~ sale_cust$Class) #구매금액 - M
+
+
+#1. 구매금액은 남자가 높지만 거래빈도는 여자가 많다.
+install.packages("wesanderson")
+library(wesanderson)
+
+boxplot(sale_cust$t ~ sale_cust$sex_flg)
+
+
+if (!require(wesanderson)){
+  install.packages("wesanderson")
+  require(wesanderson)
+}
+with(sale_cust, boxplot(MeanValue~sex_flg,
+                 main= "성별별 거래금액",
+                 col=wes_palette("Royal1",2),
+                 xlab="성별",
+                 ylab="거래액"))
+
+with(sale_cust, boxplot(NoTransaction~sex_flg,
+                        main= "성별별 거래빈도",
+                        col=wes_palette("Chevalier1",2),
+                        xlab="성별",
+                        ylab="거래빈도"))
+
+table(sale_cust$Class,sale_cust$sex_flg)
+
+rfm$Mscore <- with(rfm, ifelse(MeanValue>=900000, 4, 
+                               ifelse(MeanValue>=650000, 3,
+                                      ifelse(MeanValue>=380000, 2,1))))
+
+rfm$Fscore <- with(rfm, ifelse(NoTransaction>=33, 4, 
+                               ifelse(NoTransaction>=20, 3,
+                                      ifelse(MeanValue>=10, 2,1))))
+rfm$Rscore <- with(rfm, ifelse(t>=40, 1, 
+                               ifelse(t>=25, 2,
+                                      ifelse(t>=14, 3,4))))
+rfm$FinalScore <- rfm$Rscore*3+rfm$Fscore*2+rfm$Mscore*5 #가중치를 주어 finalscore
+
+rfm$Class <- with(rfm, ifelse(FinalScore>=27, "VVIP", 
+                              ifelse(FinalScore>=25, "A", 
+                                     ifelse(FinalScore>=20, "B", "C"))))
+table(sale_cust$Class,sale_cust$sex_flg)
+
+
+sale_cust <- sqldf("select r.*, c.* 
+                   from rfm as r, cust as c
+                   where r.CustomerId=c.cust_id") #id로 조인, rfm과  cust의 모든 열 가져오기
+
+sale_cust <- sqldf("select r.*,c.*
+                   from rfm as r inner join cust as c
+                   on r.CustomerID = c.cust_id")
+sale_cust$cust_id <- NULL
+sale_cust
+sqldf("select avg(r.MeanValue)
+        from rfm as r, cust as c
+        where r.CustomerId=c.cust_id
+          and c.sex_flg='여자'")
+
+sqldf("select avg(r.MeanValue)
+        from rfm as r, cust as c
+        where r.CustomerId=c.cust_id
+          and c.sex_flg='남자'")
+
+sqldf("select MeanValue, t
+        from sale_cust
+        order by MeanValue desc")
+
+
+
+
+
+
+sqldf("select avg(MeanValue)
+      from sale_cust
+      group by sex_flg")
+
+sqldf("select avg(NoTransaction)
+      from sale_cust
+      group by sex_flg")
+
+
+sqldf("select Class, sex_flg
+      from sale_cust")
+
+
+sqldf("select CustomerID, MeanValue, t from sale_custorder_by t")
+
+sqldf("select CustomerID, MeanValue, NoTransaction
+      from sale_cust
+      order by NoTransaction")
+
+sqldf("select *
+      from sale_cust
+      where CustomerID=51")
+
+sqldf("select CustomerID, MeanValue
+      from sale_cust
+      order by MeanValue desc")
