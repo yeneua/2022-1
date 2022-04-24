@@ -131,5 +131,20 @@ d1<-t(d) #행과 열을 바꿔줌
 mosaicplot(d1, color=topo.colors(14), cex=1, main="2020년 부산 지역별 진료과목 현황")
 
 
+library(readxl)
+data21 <- read_excel("시군구별_표시과목별_의원_현황_20220424223414.xlsx", sheet = '21')
+
+dd21 <- melt(id=1, data21)
+dd21<-subset(d21,
+             variable !='진단검사의학과' & variable !='핵의학과'  & variable !='병리과' & variable !='결핵과' & variable !='흉부외과'
+             & variable !='재활의학과' & variable !='신경과'  & variable !='영상의학과' & variable !='가정의학과' & variable !='신경외과' )
+e <- dd21$value
+dim(e) <- c(16,14) 
+rownames(e) <- dd21$sido[1:16]
+colnames(e) <- unique(dd21$variable)
+e
+mosaicplot(e, color=rainbow(14), main="부산 지역별 진료과목 현황")
+e1<-t(e)
+mosaicplot(e1, color=terrain.colors(14), cex=1, main="2021년 부산 지역별 진료과목 현황")
 
 
