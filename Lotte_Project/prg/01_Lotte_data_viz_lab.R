@@ -73,3 +73,7 @@ boxplot(s1$amount ~s1$거래월)
 # => 중앙값은 거의 비슷한 듯 ?. 근데 10월 머임 ?? 왜 그럴까? - 10월데이터가 일부만 있어서. 10월 빼고 분석 고고
 boxplot(s1$amount~s1$점포ID)
 boxplot(s1$cnt~s1$점포ID)
+
+
+load(file="data/s1.rda")
+head(s1)
