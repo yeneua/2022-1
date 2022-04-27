@@ -135,9 +135,6 @@ library(readxl)
 data21 <- read_excel("시군구별_표시과목별_의원_현황_20220424223414.xlsx", sheet = '21')
 
 dd21 <- melt(id=1, data21)
-dd21<-subset(d21,
-             variable !='진단검사의학과' & variable !='핵의학과'  & variable !='병리과' & variable !='결핵과' & variable !='흉부외과'
-             & variable !='재활의학과' & variable !='신경과'  & variable !='영상의학과' & variable !='가정의학과' & variable !='신경외과' )
 e <- dd21$value
 dim(e) <- c(16,14) 
 rownames(e) <- dd21$sido[1:16]
