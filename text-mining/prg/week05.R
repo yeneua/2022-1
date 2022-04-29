@@ -120,7 +120,7 @@ paste(month.abb) #내장데이터
 paste(month.abb, 1:12)
 paste(month.abb, 1:12, sep = "-") #공백이 아닌 bar가 들어감
 paste(month.abb, 1:12, sep = ":")
-paste(month.abb, 1:!2, sep = "-", collapse = "_") #하나하나 벡터 아니고, 한꺼번에 가져오고 싶다. -> collapse
+paste(month.abb, 1:12, sep = "-", collapse = "_") #하나하나 벡터 아니고, 한꺼번에 가져오고 싶다. -> collapse
 paste(month.abb, 1:12, sep = "-", collapse = " ")
 
 outer()
