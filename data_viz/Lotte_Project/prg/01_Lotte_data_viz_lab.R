@@ -126,4 +126,93 @@ s2 <- tb %>%  #s1은 월별, 점포와 다 섞인 데이터
 
 #다양한 속성을 가지고 그림을 그림. 시각 속성을 활용해 많은 정보 표시
 
+#점포별로 월별로 차이가있는지
+head(s1)
+g2 <- ggplot(s1, aes(거래월, 점포ID)) +
+  geom_tile(aes(fill = amount)) + #geom_tile :3 variables
+  scale_fill_gradientn(colors = brewer.pal(n = 5, name = "RdBu")) #gradientn : 색깔의 숫자 정함
+g2
 
+#품목도 궁금 ?
+g3 <- ggplot(s1, aes(거래월, 상품대분류명)) +
+  geom_tile(aes(fill = amount)) + #fill을 amount, cnt로 바꿔서 확인 바꾸기
+  facet_wrap(~점포ID) +  #점포ID별
+  scale_fill_gradientn(colors = brewer.pal(n = 5, name = "RdBu")) #gradientn : 색깔의 숫자 정함
+g3
+
+#구매내역가지고만 분석을 해옴. RFM(최근성,빈도,금액)
+
+### 고객별 분석(RFM) <- 10주차 대면수업 소스파일 복붙함
+if (!require(didrooRFM)){
+  install.packages("didrooRFM")
+  require(didrooRFM)
+}
+?findRFM
+customerData <- subset(tb, select=c(거래식별ID,ID, 거래일자,구매금액)) #findRFM에 맞게 데이터셋 만들어줌
+result <- findRFM(customerData, 4, 3, 3)
+result$MonetoryScore
+result$RecencyScore
+result$FrequencyScore
+result$FinalScore
+result$FinalCustomerClass
+table(result$FinalCustomerClass)
+(d<-result %>%
+    group_by(FinalCustomerClass) %>%
+    summarise(frq = n(),
+              sale = mean(MeanValue),
+              score = mean(FinalScore)))
+
+(g <- ggplot(result, aes(x=FinalCustomerClass, y=MeanValue*NoTransaction)) + 
+    geom_boxplot(aes(size=NoTransaction))+
+    labs(title="Bubble Chart", subtitle="점포별 : 품목 vs 매출액",
+         x = "품목", y="매출액"))
+
+#sub3 <-aggregate(x=round(tb$구매금액/1000,0), by=list(catDate=as.character(tb$거래월), catStore=tb$점포ID, ID=tb$ID), FUN=sum)
+s3<-tb %>% 
+  group_by(ID, 점포ID)  %>%
+  summarise(amount=sum(round(구매금액/1000,0)), cnt=sum(구매건수))
+data <- sqldf("select a.*, b.MeanValue, b.NoTransaction, b.FinalCustomerClass from s3 as a, result as b 
+         where a.ID = b.CustomerID")
+
+table(data$FinalCustomerClass, data$점포ID)
+g <- ggplot(data, aes(점포ID)) +
+  geom_bar(aes(fill = FinalCustomerClass), position = position_stack(reverse = TRUE))
+
+g
+
+(g <- ggplot(data, aes(x=FinalCustomerClass, y=amount)) + 
+    geom_point(aes(col=점포ID)) +
+    labs(title="Bubble Chart", subtitle="점포별 : 품목 vs 매출액",
+         x = "품목", y="매출액"))
+temp<- data %>% group_by(점포ID, FinalCustomerClass) %>% 
+  summarize(amount=mean(amount), cnt=mean(cnt))
+(g <- ggplot(temp, aes(x=점포ID, y=amount)) + 
+    geom_point(aes(col=FinalCustomerClass, size=cnt)) +
+    labs(title="Bubble Chart", subtitle="점포별 : 품목 vs 매출액",
+         x = "품목", y="매출액"))
+
+
+#RFM으로 고객을 분류한 데이터를 불러옴
+load(file="data.rda")
+table(data$FinalCustomerClass, data$점포ID)
+# => AA : 거래고객多. class-5가 vip고객
+# => 결과를 보고 어떤 그래프를 그리면 좋을까 ?
+
+a <- ggplot(data, aes(점포ID)) +
+  geom_bar(aes(fill = FinalCustomerClass),
+           position = position_stack(reverse =TRUE)) #class-5인 사람을 제일 위로
+a
+
+g <- ggplot(data, aes(FinalCustomerClass, amount)) +
+  geom_point(aes(col = 점포ID))
+g
+#=>grouping 필요
+#temp활용한 plot확인(위에있음)
+# ㄴ=> class별로 sum이 아니라 평균(class마다 사람수가 다르기때문에)
+
+
+# 다음 시간 - 지역별로 인구 변화, 산업집적도(지역-산업) 볼 것. 지리정보활용
+# 서울 - 서비스업↑
+# 경기도 - 제조업(반도체, IT)
+# 등등 ... 이런것이 인구이동에 얼마나 영향을 주는지
+# 부동산가격 - 인구 증가 인동의 요인임
