@@ -146,3 +146,40 @@ head(busan_map, 20)
 
 
 ## 시험 -> 지금 공부하는 내용. 작년 시험문제 줄 것 - 유형파악.실습.오픈북
+
+
+### 좌표파일 테스트
+library(readxl)
+my = read_excel("./data/부산 시군구 중앙 좌표.xlsx")
+my
+
+b <- merge(my, busan_map, by="SIG_CD") #x가 중앙좌표
+head(b)
+head(b)
+
+(ggplot(busan_map, aes(long,lat,group=group, fill=economic))+ #fill=economic
+    geom_polygon()+
+    geom_text(data = my, 
+              aes(x = long, 
+                  y = lat,
+                  label = SIG_CD))+
+    scale_fill_gradientn(colors = brewer.pal(9, name = "YlGnBu")))
+
+(ggplot()+
+    geom_polygon(busan_map, aes(long,lat, group=group, fill=economics))+
+    geom_text(data = my, aes(x=long,y=lat, label=SIG_CD))+
+    scale_fill_gradientn(colors=brewer.pal(9, name="YlGnBu")))
+
+
+
+#13-1
+c <- as.data.frame(busan_map %>% 
+  group_by(group) %>% 
+  summarise(long = median(long), lat = median(lat),
+            index = paste(SIG_KOR_NM,"(",index,")")), .groups = "keep")
+c
+##options(dplyr.summarise.inform = TRUE)
+
+ggplot()+geom
+
+
