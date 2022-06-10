@@ -35,19 +35,22 @@ reviews = str_replace(reviews, str, "") #지움
 reviews = str_replace(reviews, "0", "") #10점 받은 것들은 0이 남아있기 때문에 지워줌
 reviews
 #ㄴ-> cleansing
-
 save(reviews, file="reviews.rda") #save해두기
 save(titles, file="titles.rda")
 #save(predict, file="predict.rda")
-####  predict 
-predict = NULL
+####  predict -> positive, negative 개수 세준 것
+
+positive <- readLines("data/positive.txt", encoding='UTF-8') #긍정어사전
+negative <- readLines("data/negative.txt", encoding='UTF-8') #부정어사전
+
+predict = NULL # 초기화
 scores = NULL
-m <- length(reviews)
+m <- length(reviews) #리뷰 길이
 for(i in 1:m){
 words = str_split(reviews[i], '\\s+') #문자열 나누기
 words = unlist(words) #리스트를 vector로 바꿈
-words <- gsub("[^A-Za-z0-9ㄱ-힣]", "", words)
-pos.matches = intersect(words, positive)
+words <- gsub("[^A-Za-z0-9ㄱ-힣]", "", words) #영문,숫자 지우기
+pos.matches = intersect(words, positive) # intersect : 교집합 - positive에 해당하는 단어가 사전에 있는가를 확인
 pos.cnt=length(pos.matches)
 # words의 단어를 positive에서 matching
 neg.matches = intersect(words, negative)
@@ -55,29 +58,50 @@ neg.cnt=length(neg.matches)
 
 score = sum(pos.cnt) - sum(neg.cnt) 
 scores = c(scores, score)
-if(pos.cnt > neg.cnt){
-  predict <- c(predict, 1)
+if(pos.cnt > neg.cnt){ # predict를 만드는 코드 
+  predict <- c(predict, 1) # 긍정 -> 1
    } else if(pos.cnt < neg.cnt){
-     predict<-c(predict, -1)
+     predict<-c(predict, -1) # 부정 -> -1
       }  else {
-          predict<-c(predict, 0)  
+          predict<-c(predict, 0)  # 중립 -> )
         }
 }
+# => predict가 긍정?부정?인지 판단
+
 #### polarity 평가 ###
 
+load("data/titles.rda")
+load("data/predict-1.rda")
+titles[1]
+predict[1] # 인덱스가 1에 해당하는 내용
+table(titles) #table() : 빈도확인
 
+#### 특정 영화에 대한 극성평가 ## - 영화별로 감성분석
+i = which(titles == "범죄도시2") # which() : 인덱스를 찾아주는 함수. 자주쓰이는 함수
+i # 인덱스 확인 - 범죄도시2의 인덱스값
+s = predict[i] # 범죄도시2의 predict값만 뽑아옴
+s
+p = length(s[s==1])
+n = length(s[s==-1])
+polarity=(p-n)/(p+n)
+polarity
 
-
-
-#### 특정 영화에 대한 극성평가 ##
-
-
+# 그대가조국 영화
+i = which(titles == "그대가 조국") 
+i
+s = predict[i] 
+s
+p = length(s[s==1])
+n = length(s[s==-1])
+polarity=(p-n)/(p+n)
+polarity
 
 
 ### 차트 #####
-table(titles)
+pie(table(predict[i]), col=c("red", "green","blue"))
+stable(titles)
 
+# 감성분석은 간단하게 나옴. 14주차 동영상 진도때문에 수업한 것임.
 
-
-
+# 어렵지 않다고 .. 하심
 
