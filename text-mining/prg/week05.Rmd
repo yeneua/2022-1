@@ -1,0 +1,196 @@
+---
+title: "week05"
+---
+
+
+```{r}
+# R 스크립트 실행
+# shift + Ctrl + Enter
+
+# HTML로 preview 보기
+# shift + Ctrl + K
+
+# R 스크립트 입력 행 새로 만들기
+# Ctrl + Alt + I
+```
+
+
+
+```{r}
+# week05
+```
+
+
+
+```{r}
+
+# nchar(), length
+x <- "We have a dream"
+nchar(x) # char 요소가 몇개인지 불러오기. 공백포함
+length(x) # 전체요소. 벡터가 몇개인지
+
+```
+
+
+
+```{r}
+
+# tolower(), toupper()
+fox.says <- "It is only with the HEART that one can See Rightly"
+fox.says
+tolower(fox.says)
+toupper(fox.says)
+
+```
+
+
+
+```{r}
+
+# strsplit() : 텍스트 분할. 리스트 타입으로 반환
+fox.said <- "what is essential is invisible to the eye"
+fox.said # 문자벡터
+strsplit(fox.said, split=" ") #공백으로 분할. 리스트 타입으로 나옴
+strsplit(fox.said, split="")
+
+```
+```{r}
+# unlist()
+unlist(strsplit(fox.said, split= " ")) # 결과 리스트가 아니라 벡터형태로
+```
+```{r}
+unlist(strsplit(fox.said, split= " "))[3]
+strsplit(fox.said, split= " ")[[1]] #list니까 list indexing #[[]] : 리스트 안에 그 값 자체를 가져오는 것. 자루 아님.
+strsplit(fox.said, split= " ")[[1]][[3]]
+```
+
+
+```{r}
+# unique()
+fox.said <- "WHAT IS ESSENTIAL is invisible to the Eye"
+fox.said.words <- strsplit(fox.said, split = " ")[[1]]
+unique(fox.said.words)
+```
+```{r}
+# paste()
+paste("Everyone", "wants", "to","fly")
+paste("Everyone", "wants", "to","fly", sep = "-")
+paste("Everyone", "wants", "to","fly", sep = "")
+paste0("Everyone", "wants", "to","fly") #윗행과 동일한 결과. 전부 붙이는 것 : paste0
+```
+
+
+```{r}
+fox.said.words #8개로 구성된 하나의 벡터. length(fox.said.words) => 8(길이가 8)
+paste(fox.said.words)  #하나의 벡터이기 때문에 수행할것X
+#paste() : 벡터들을 결합하는 함수
+```
+
+```{r}
+#문자가 아닌경우, 문자로 변환시켜 return
+paste(pi, sqrt(pi))
+class(paste(pi, sqrt(pi)))
+```
+
+```{r}
+heroes <- c("Batman", "Captain America", "Hulk")
+colors <- c("Black", "Blue", "Green")
+  
+# 두개의 벡터를 paste
+paste(heroes, colors)
+paste(heroes, letters[1:3]) # [1:3]으로 해야함. [:3]으로 하면 에러
+```
+
+```{r}
+paste("Type",1:10) #공백을 기준으로 paste합침
+```
+
+```{r}
+fox.said.words # vector
+paste(fox.said.words, collapse = " ") #공백으로 하나로 합침
+paste(fox.said.words, collapse = "-")
+```
+
+```{r}
+# sep vs collapse
+paste(c(1,2),letters[1:2])
+paste(c(1,2),letters[1:2], sep="/")
+paste(c(1,2),letters[1:2], collapse="/")
+
+# sep -> separate(구분하다) paste안에 나열된 원소 마다 구분 옵션
+# collapse -> 결과값이 두 개 이상일때, 그 결과값들을 이어붙여서 결과값ㅇ르 하나로 만들어줌
+# 하나하나 벡터 아니고, 한꺼번에 가져오고 싶다. -> collapse
+```
+
+```{r}
+# outer() : 각각의 숫자들과 쌍을 이루는 모든 가능한 조합들의 곱. outer(x,y, fun= ) #기본 func: 곱("*")
+outer(1:3, 1:3)
+outer(c(1,2,3), c(1,2,3))
+```
+
+```{r}
+countries <- c("KOREA", "US", "EU")
+stat <- c("GDP", "Pop", "Area")
+outer(countries, stat, FUN = paste, sep = "-")
+outer(stat, countries, paste) #처음에 오는 인자가 행방
+```
+```{r}
+#sprintf() - 문장내에 변수랑 섞어서 사용 가능. 파이썬처럼. 장점 여러가지 유형으로 출력할 수 있다.
+customer <- c("Kim","Choi","Ryu")
+buysize <- c(10,8,9)
+deliveryday <- c(2,3,7.5)
+sprintf("hello %s, i'm %d years old", customer, buysize) # %d : integer, %s : string(NA도 "NA"로 변환됨)
+```
+
+```{r}
+#substr() : 특정부분만 가져오는것. 공백포함함
+substr("Brooklyn Nine Nine",10,13)
+```
+```{r}
+#substring() : 시작점을 지정해주면, 거기서부터 끝까지 가져오는 것
+substring("Text Analytics", 6) #뒤에 인자가 하나. 6부터 끝까지
+```
+```{r}
+#벡터 형태도 당연히 가능
+class <- c("Data analytics", "Data visualization", "Data science introduction")
+substr(class, 1, 4) #각각의 요소에서 1~4번째까지. 동일한 위치
+substring(class, 6) #substring - 끝 위치 정확히 모를때 사용하면 좋다.
+substring(class, 10)
+```
+
+```{r}
+#길이가 다 다른 문자 각각의 젤 뒤에 약자만 가지고 오고 싶다하면
+countries <- c("Korea, KR", "United states, US", "China, CN")
+substring(countries, nchar(countries)-1)
+substr(countries, nchar(countries)-1, nchar(countries))
+```
+```{r}
+#grep() : 특정 패턴을 가진 string에서, 일부분만 가져오는 것
+landnames <- names(islands)
+grep(pattern = "New", x = landnames) #New라는 단어가 포함된 섬 이름
+# => 이름이 아니라 원소의 인덱싱 값을 보여줌
+```
+```{r}
+index <- grep(pattern = "New", x = landnames) # 1.인덱스 값을 저장하고
+landnames[index] # 2. 출력
+```
+
+```{r}
+grep(pattern = "New", x = landnames, value = TRUE) #value = TRUE를 하면 인덱스 값이 아니라 실제 인자값을 그대로 리
+```
+
+```{r}
+#landnames가 두 단어 이상으로 된 것만 가져오자 - 두 단어라면 공백이 있음
+grep(pattern = " ", x= landnames, value = TRUE)
+```
+```{r}
+#lower.tri() - 강의자료에 있더라고 ~
+m2 <- matrix(1:20, 4,5) #1~20까지 행렬. 4행 5열열
+m2
+lower.tri(m2) #대각선 기준으로 밑에 부분
+upper.tri(m2) #대각선 기준으로 위에 부분
+m2[lower.tri(m2)]
+m2[upper.tri(m2)]
+```
+
+
