@@ -1,0 +1,483 @@
+---
+title: "week11"
+---
+
+```{r}
+getwd()
+```
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+#문재인 대통령 연설문 불러오기
+raw_moon <- readLines("../data/speech_moon.txt", encoding = "UTF-8")
+moon <- raw_moon %>% 
+  as_tibble() %>% 
+  mutate(president = "moon")
+moon
+```
+```{r}
+#박근혜 대통령 연설문 불러오기
+raw_park <- readLines("../data/speech_park.txt", encoding = "UTF-8")
+park <- raw_park %>% 
+  as_tibble() %>% 
+  mutate(president = "park")
+park
+
+```
+
+```{r}
+#두 데이터 합치기
+bind_speeches <- bind_rows(moon, park) %>% #cbind()
+  select(president, value)
+
+```
+
+
+```{r}
+# 각 대통령별로 문장개수
+bind_speeches %>% count(president)
+```
+
+
+```{r}
+head(bind_speeches)
+tail(bind_speeches)
+```
+
+
+```{r}
+#기본적인 전처리
+library(stringr)
+speeches <- bind_speeches %>% 
+  mutate(value = str_replace_all(value, "[^가-힣]", " "),
+         value = str_squish(value))
+speeches
+
+
+```
+
+
+```{r}
+#토큰화
+library(tidytext)
+library(KoNLP) #별도의 추가 설치
+speeches <- speeches %>% 
+  unnest_tokens(input = value,
+                output = word,
+                token = extractNoun)
+speeches
+```
+
+
+```{r}
+frequency <- speeches %>% 
+  count(president, word) %>%  #연설문 및 단어별 빈도
+  filter(str_count(word) > 1) #한 글자가 넘는( 두글자 이상 추출)
+head(frequency)
+tail(frequency)
+```
+
+```{r}
+top10 <- frequency %>% 
+  group_by(president) %>% # president별로 분리
+  arrange(desc(n)) %>% head(10) %>% # 상위 10개추출
+  filter(president == "park") # 그 10개 중에 park대통령 데이터만 선택
+top10
+```
+
+
+```{r}
+# dplyr::slice_max() : 값이 큰 상위 n개의 행을 추출해 내림차순 정렬
+top10 <- frequency %>% 
+  group_by(president) %>% # president별로 분리
+  slice_max(n, n = 10)
+top10
+# => 대통령별로 10개씩 추출하고 내림차순 정렬
+```
+
+
+```{r}
+top10 <- frequency %>% 
+  group_by(president) %>% 
+  slice_max(n, n = 10, with_ties = F) # 동률 무시
+top10
+```
+
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+ggplot(top10, aes(x = reorder(word, n),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president) # 각각 대통령별로 그래프
+```
+```{r}
+# y축 통일하지 않고 각각 10개씩
+ggplot(top10, aes(x = reorder(word, n),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president, scales = "free_y")
+```
+
+```{r}
+# 축 재정리 - top10데이터는 대통령 전체를 이용해서 정렬한 데이터이다 보니 순서정렬이 제대로x
+ggplot(top10, aes(x = reorder_within(word, n, president),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president, scales = "free_y")
+```
+
+```{r}
+# tidytext::scalae_x_reordered() - 각단어 뒤의 범주 항목 제거
+ggplot(top10, aes(x = reorder_within(word, n, president),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president, scales = "free_y") +
+  scale_x_reordered() +
+  labs(x = NULL) #+ # x축 삭제
+```
+
+
+***odds ratio***
+
+```{r}
+df_long <- frequency %>% 
+  group_by(president) %>% 
+  slice_max(n , n = 10) %>% 
+  filter(word %in% c("국민", "우리", "정치", "행복"))
+df_long
+```
+
+pivoting
+
+```{r}
+# install.packages("tidyr")
+library(tidyr)
+```
+```{r}
+df_wide <- df_long %>% 
+  pivot_wider(names_from = president, # 기준(열) : president
+              values_from = n) # 안에 채워넣을 값
+df_wide
+# => 값이 없는 경우는 NA
+```
+
+```{r}
+# NA를 0으로
+df_wide <- df_long %>% 
+  pivot_wider(names_from = president,
+              values_from = n,
+              values_fill = list(n = 0))
+df_wide
+```
+
+```{r}
+# 우리가 사용할 데이터
+frequency_wide <- frequency %>% 
+  pivot_wider(names_from = president,
+              values_from = n,
+              values_fill = list(n =0))
+frequency_wide
+```
+<br>
+Odds ratio계산
+
+```{r}
+frequency_wide <- frequency_wide %>% 
+  mutate(ratio_moon = ((moon) / (sum(moon))), #moon에서 단어의 비중. 단어빈도/전체sum
+         ratio_park = ((park) / (sum(park)))) #park에서 단어의 비중. 단어빈도/전체sum
+frequency_wide
+```
+
+
+```{r}
+# 단어 비중 비교를 위해서 각 행에 1을 더함
+# NA는 0으로 처리했음. 빈도수, odds ratio도 0이면 상대적인 중요도를 확인하기 쉽지 않다.
+frequency_wide <- frequency_wide %>% 
+  mutate(ratio_moon = ((moon + 1) / (sum(moon + 1))),
+         ratio_park = ((park + 1) / (sum(park + 1))))
+frequency_wide
+```
+```{r}
+# odds ratio 구하기 - 문재인 대통령 기준
+frequency_wide <- frequency_wide %>% 
+  mutate(odds_ratio = ratio_moon/ratio_park)
+frequency_wide
+# => 1이면 문재인,박근혜 대통령에서 등장한 단어의 빈도가 같음
+# => 1보다 크면 문재인 대통령 연설문에서 더 중요하게 언급된 단어
+# => "moon"에서 상대적인 비중 클수록 1보다 큰 값
+# => "park"에서 상대적인 비중 클수록 1보다 작은 값
+```
+
+```{r}
+# odds_ratio 기준 내림차순 정렬
+frequency_wide %>% arrange(-odds_ratio)
+```
+
+```{r}
+# 오름차순정렬
+frequency_wide %>% arrange(odds_ratio)
+```
+
+```{r}
+# 상대적으로 중요한 단어 추출하기
+top10 <- frequency_wide %>% 
+  filter(rank(odds_ratio) <= 10 | rank(-odds_ratio) <= 10)
+# 내림차순 정렬에서 상위10개 -> 문재인 대통령에서 상대적으로 중요한 단어
+# 오름차순 정렬에서 상위10개 -> 박근혜 대통령에서 상대적으로 중요한 단어
+top10
+```
+
+```{r}
+# 어느 대통령인지 나타내기
+top10 <- top10 %>% 
+  mutate(president = ifelse(odds_ratio >= 1, "moon", "park"), # 1보다 크면 moon
+         n = ifelse(odds_ratio > 1, moon, park))
+top10
+```
+
+```{r}
+# 동률무시, slice_max():대통령별로 10개씩 추출
+top10 <- top10 %>% 
+  group_by(president) %>% 
+  slice_max(n, n = 10, with_ties = F)
+top10
+```
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+ggplot(top10, aes(x = reorder_within(word, n, president),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president, scales = "free_y") +
+  scale_x_reordered()
+```
+```{r}
+# 그래프 별로 축 별도 설정 - x축 범위가 다르다
+ggplot(top10, aes(x = reorder_within(word, n, president),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president, scales = "free") +
+  scale_x_reordered() +
+  labs(x = NULL) # x축 삭제
+```
+
+
+```{r}
+# 로그오즈비
+# log : 1보다 큰 것은 (+) , 1보다 작은 것은 (-)
+frequency_wide <- frequency_wide %>% 
+  mutate(log_odds_ratio = log(odds_ratio))
+frequency_wide
+
+```
+
+```{r}
+# log_odds_ratio 내림차순정렬
+frequency_wide %>% arrange(-log_odds_ratio)
+
+```
+
+```{r}
+# log_odds_ratio 오름차순정렬
+frequency_wide %>% arrange(log_odds_ratio)
+```
+```{r}
+# slice_max() : 대통령별로 10개씩
+top10 <- frequency_wide %>% 
+  group_by(president = ifelse(log_odds_ratio > 0, "moon", "park")) %>% 
+  slice_max(abs(log_odds_ratio), n = 10, with_ties = F)
+top10
+```
+```{r}
+top10 %>% 
+  arrange(-log_odds_ratio) %>% 
+  select(word, log_odds_ratio, president)
+```
+```{r}
+# 서로 다른 방향으로 그래프 그리기
+ggplot(top10, aes(x = reorder(word, log_odds_ratio),
+                  y = log_odds_ratio,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  labs(x = NULL)
+```
+
+***11-2***
+
+
+```{r}
+text <- c("Crash dieting is not the best way to lose weight. http://bbc.in/1G0J4Agg",
+          "A vegetarian diet excludes all animal flesh (meat, poultry, seafood).",
+          "Economists surveyed by Refinitiv expect the economy added 160,000 jobs.")
+```
+
+```{r}
+library(tm)
+```
+텍스트 전처리
+```{r}
+corpus.docs <- VCorpus(VectorSource(text)) # 코퍼스로 만들기
+lapply(corpus.docs, meta) #메타데이터확인
+lapply(corpus.docs, content) #content확인
+corpus.docs <- tm_map(corpus.docs, content_transformer(tolower)) # 소문자로
+lapply(corpus.docs, content)
+corpus.docs <- tm_map(corpus.docs, removeWords, stopwords("english")) #불용어처리
+lapply(corpus.docs, content)
+myRemove <- content_transformer(function(x, pattern)
+  {return(gsub(pattern, "", x))}) #특정 패턴을 가지는 문자열 제거하는 함수 만들기
+corpus.docs <- tm_map(corpus.docs, myRemove, "(F|ht)tp\\S+\\s*") # url제거
+lapply(corpus.docs, content)
+corpus.docs <- tm_map(corpus.docs, removePunctuation) #문장부호 삭제
+corpus.docs[[1]]$content
+corpus.docs <- tm_map(corpus.docs, removeNumbers) #숫자 삭제
+lapply(corpus.docs, content)
+corpus.docs <- tm_map(corpus.docs, stripWhitespace) # 여백삭제
+lapply(corpus.docs, content)
+corpus.docs <- tm_map(corpus.docs, content_transformer(trimws)) # 텍스트앞뒤 여백삭제
+lapply(corpus.docs, content)
+corpus.docs <- tm_map(corpus.docs, stemDocument) # 어간 추출
+lapply(corpus.docs, content)
+corpus.docs <- tm_map(corpus.docs, content_transformer(gsub),
+                      pattern = "economist", replacement="economi") #동의어 처리
+lapply(corpus.docs, content)
+
+```
+
+```{r}
+corpus.docs
+```
+
+<br>?DocumentTermMatrix()
+<br>
+corpur -> dtm
+
+```{r}
+corpus.dtm <- DocumentTermMatrix(corpus.docs,
+                   control = list(wordLengths = c(2, Inf))) # 단어 2개이상부터. 리스트형태로 받아오기
+corpus.dtm
+# => documents: 3
+# => terms: 19
+# => Non-/sparse entries: 20/37 -> sparse entries가 37개 -> 57(19*3)개 중에 0이 들어간 게 37개. 0이 아닌것이 20개
+# => Sparsity: 65% -> 밀도 37/57*100
+# => Maximal term length: 10 -> 제일 긴 단어. 10개의 알파벳으로 구성
+# => Weighting: term frequency(tf) -> 단어 출현 빈도로 채워짐
+```
+```{r}
+nTerms(corpus.dtm) # 단어가 몇개인지
+```
+
+```{r}
+nDocs(corpus.dtm) # 문서가 몇개인지
+```
+
+```{r}
+Terms(corpus.dtm) # 단어
+```
+
+```{r}
+Docs(corpus.dtm) # 문서 이름
+```
+
+```{r}
+row.names(corpus.dtm) <- c("BBC", "CNN", "FOX") # 문서이름 부여
+row.names(corpus.dtm) # 문서이름
+```
+
+```{r}
+# inspect() : dtm 자세하게. 전체는아님
+inspect(corpus.dtm)
+```
+```{r}
+inspect(corpus.dtm[1:3,10:19]) # matrix indexing으로 dtm을 더 자세하게 확인
+```
+
+```{r}
+inspect(corpus.dtm[2:3,15:19]) # 열은 10개가 최대
+```
+
+<br>
+tidy text -> dtm
+```{r}
+text <- c("Crash dieting is not the best way to lose weight. http://bbc.in/1G0J4Agg",
+          "A vegetarian diet excludes all animal flesh (meat, poultry, seafood).",
+          "Economists surveyed by Refinitiv expect the economy added 160,000 jobs.")
+source <- c("BBC", "CNN", "FOX")
+```
+
+
+```{r}
+library(dplyr)
+library(tidytext)
+library(SnowballC)
+```
+
+```{r}
+text.df <- tibble(source = source, text = text) # tibble 형태로 만들기
+text.df
+```
+```{r}
+text.df$text <- gsub("(f|ht)tp\\S+\\s*", "", text.df$text) # url 삭제
+text.df$text
+text.df$text <- gsub("\\d+", "", text.df$text) # 숫자 삭제
+text.df$text
+tidy.docs <- text.df %>% 
+  unnest_tokens(output = word, input = text) %>% # 토큰화
+  anti_join(stop_words, by = "word") %>%  # 불용어 사전을 활용한 불용어제거
+  mutate(word = wordStem(word)) # 어간 추출
+tidy.docs
+tidy.docs$word <- gsub("\\s+", "", tidy.docs$word) # 공백 제거
+tidy.docs$word
+tidy.docs$word <- gsub("economist", "economi", tidy.docs$word) # 동의어 처리
+tidy.docs$word
+
+```
+
+```{r}
+tidy.docs
+```
+
+```{r}
+tidy.docs %>% count(source, word)
+```
+
+```{r}
+# dtm 만들기 - cast_dtm(데이터, 문서, 용어, value)
+tidy.dtm <- tidy.docs %>% count(source, word) %>% 
+  cast_dtm(document = source, term = word, value = n)
+tidy.dtm
+```
+```{r}
+Terms(tidy.dtm)
+```
+
+```{r}
+Docs(tidy.dtm)
+```
+
+```{r}
+inspect(tidy.dtm[1:2,3:5])
+```
+
