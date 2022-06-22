@@ -1,3 +1,7 @@
+# findRFM(customerdata, recencyWeight, frequencyWeight, MonetoryWeight)
+# customerdata(trainsactionID, customerID, Date, Amount) date format
+
+
 # 데이터 작성
 # 거래번호별 고객의 구매 데이터
 Sys.setenv(JAVA_HOME="C:/Program Files/Java/jdk-14.0.2/")
@@ -61,31 +65,49 @@ file <- choose.files() #file open
 sale <- read.csv(file,header=T)
 file1 <- choose.files() #file open
 cust <- read.csv(file1,header=T)
+
+str(sale)
+str(cust)
+
 ### data 정리
 library(dplyr)
 sale <- rename(sale, cust_id = 癤풻ust_id) #sale.csv
 cust <- rename(cust, birth_data=癤풺irth_date) #custInfo.csv
+
 cust$sex_flg <- factor(cust$sex_flg, levels = c(1,2), labels=c("남자", "여자")) #1,2로 된 성별변수에 라벨링
 head(sale)
 head(cust)
+str(sale)
+str(cust)
+dim(sale)
+
 tId <- c(1:298) #transaction id를 생성해주기 위해 1~298까지 들어있는 벡터 생성
 sale$sale_date <- as.Date(sale$sale_date) #transaction date -> date 형식이어야됨. but, str(sale)로 확인해보면 chr형태임 -> as.Date로 바꿔주기
 sale <- cbind(tId, sale) #sale 데이터에 transaction id를 추가해줌(cbind)
+
 saleResult <- findRFM(sale) #고객아이디별로 정렬됨
 saleResult$FrequencyPercentile 
 saleResult$FinalWeightedScore
 saleResult$FinalCustomerClass
 table(saleResult$FinalCustomerClass)
+table(saleResult$FinalCustomerClass,saleResult$FinalScore)
 saleResult$FinalScore
-with(saleResult, boxplot(MeanValue~FinalCustomerClass, 
+
+with(saleResult, boxplot(MeanValue~FinalCustomerClass,  #FinalcustomerClass별로 MeanValue
                          col=brewer.pal(4,"Pastel2"),
                          xlab="고객분류",
                          ylab="거래액"))
-hist(saleResult$MeanValue) #saleResult의 MeanValue 변수를 히스토그램으로 => 구매금액 -> 20~40만원이 빈도 가장 多
-hist(saleResult$NoTransaction)  #saleResult의 NoTransaction 변수를 히스토그램으로 => #거래건수(빈도) -> 30~35이 빈도 多, 40이상은 1, 나머지 25이하
+
+hist(saleResult$MeanValue) #saleResult의 MeanValue 변수를 히스토그램으로
+# ㄴ=> 구매금액 -> 20~40만원이 빈도 가장 多
+
+hist(saleResult$NoTransaction) #saleResult의 NoTransaction 변수를 히스토그램으로
+# => #거래건수(빈도) -> 30~35이 빈도 多, 40이상은 1, 나머지 25이하
+
 (t<-as.numeric(as.Date("2013-12-31"))-as.numeric(saleResult$LastTransaction)) #현재날짜에서 뺀 날짜수로 계산. 2013-12-31 기준 -> 숫자가 작을수록 최근
 hist(t) #날짜 변수를 히스토그램으로 => 최근 거래일이 20일 이하인 사람이 제일 많다.
 t<- cbind(t, saleResult) #변수 t에 날짜변수(t)와 saleResult를 합쳐줌(cbind)
+
 rfm <- subset(t, select=c(CustomerID, MeanValue, NoTransaction, t)) #subset함수를 이용해 t에서 원하는 컬럼만 뽑음(t, select=c(CustomerID, MeanValue, NoTransaction, t) -> rfm변수에 할당
 rfm #변수확인
 quantile(rfm$MeanValue, probs = c(0.1, 0.2, 0.25, 0.4, 0.5, 0.6, 0.75, 0.8, 0.9, 1))
@@ -94,6 +116,7 @@ quantile(rfm$NoTransaction, probs = c(0.1, 0.2, 0.25, 0.4, 0.5, 0.6, 0.75, 0.8, 
 hist(rfm$NoTransaction) #F : 빈도
 quantile(rfm$t, probs = c(0.1, 0.2, 0.25, 0.4, 0.5, 0.6, 0.75, 0.8, 0.9,1))
 hist(rfm$t) #R:최근
+
 #### rfm 점수
 rfm$Mscore <- with(rfm, ifelse(MeanValue>=900000, 4, 
                                ifelse(MeanValue>=650000, 3,
@@ -108,10 +131,11 @@ rfm$Rscore <- with(rfm, ifelse(t>=40, 1,
 rfm$FinalScore <- rfm$Rscore*3+rfm$Fscore*2+rfm$Mscore*5 #가중치를 주어 finalscore
 boxplot(rfm$FinalScore)
 quantile(rfm$FinalScore, probs = c(0.1, 0.2, 0.25, 0.4, 0.5, 0.6, 0.75, 0.8, 0.9,1))
+# 고객분류
 rfm$Class <- with(rfm, ifelse(FinalScore>=27, "VVIP", 
                               ifelse(FinalScore>=25, "A", 
                                      ifelse(FinalScore>=20, "B", "C"))))
-with(rfm, boxplot(MeanValue~Class, 
+with(rfm, boxplot(MeanValue~Class, # Class별로 MeanValue
                   col=brewer.pal(4,"Pastel2"),
                   xlab="고객분류",
                   ylab="거래액")) #클래스별로 거래액 상자그림

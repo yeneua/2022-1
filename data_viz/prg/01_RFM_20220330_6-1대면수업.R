@@ -41,7 +41,7 @@ data
 class(data$date)
 #R : 현재날짜-최근날짜 => 숫자가 작을 수록 최근
 data$R <- as.numeric(as.Date("2017-12-31")-as.Date(data$date)) #as.Date : "" 문자로 쓰여진 날짜를 날짜형식으로 바꿈
-data$R
+data$R # R 컬럼추가됨
 
 #사분위수로 데이터 파악하기
 quantile(data$R, probs = c(0.2, 0.4, 0.6, 0.8)) #5분위수로 작성함
@@ -50,7 +50,10 @@ quantile(data$M, probs = c(0.2, 0.4, 0.6, 0.8))
 #분위를 나누어서 데이터를 보고, 몇퍼센트에는 몇점을 줄지 등등 결정하기
 
 # *boxplot을 이용해서도 해보기
+boxplot(data$R)
+boxplot(data$F)
 boxplot(data$M)
+
 
 #평가 기준 설정- 점수 매기기 => 충성고객 파악
 
@@ -64,25 +67,28 @@ result$FinalScore
 result$FinalCustomerClass
 table(result$FinalCustomerClass)
 
+# 클래스별 몇명인지, MeanValue의 평균
 (result %>%
     group_by(FinalCustomerClass) %>%
-    summarise(frq = n(),
+    summarise(frq = n(), # 몇명인지
               sale = mean(MeanValue)))
 
+# 고객id, 빈도, 금액, 날짜
 data <- customerData %>%
         group_by(CustomerID) %>%
-        summarise(F = n(),
+        summarise(F = n(), # 몇번?->빈도
                   M = sum(Amount),
                   date = max(DateofPurch))
 data$R <- as.numeric(as.Date("2017-12-31")- as.Date(data$date))
 
-quantile(data$M, probs = c(0.2, 0.4, 0.6, 0.8, 0.9))
+quantile(data$M, probs = c(0.2, 0.4, 0.6, 0.8, 0.9)) # 5개 그룹으로 나누기
 
+
+# 점수부여 -> quantile로 확인하고 어디까지 나눌지 생각
 data$Mscore <- ifelse(data$M>=110000, 5, 
                       ifelse(data$M>=46800, 4,
                              ifelse(data$M>=19200, 3,
                                     ifelse(data$M>=14600,2,1))))
-
 
 
 # 대면수업
@@ -110,7 +116,7 @@ sale <- cbind(t_id, sale) #transaction id 결합해주기.
 head(sale) #확인
 
 saleResult <- findRFM(sale,3,3,4) #가중치
-saleResult$
+saleResult
 #saleResult$MeanValue - 고객별 평균 구매 금액
 #saleResult$LastTransaction 최근에 구매한 날짜
 #saleResult$NoTransaction 몇개(frequency)
@@ -121,6 +127,10 @@ str(saleResult)
 
 saleResult$FinalScore
 saleResult$FinalCustomerClass
+table(saleResult$FinalCustomerClass)
+saleResult$FinalScore
+
+
 
 if (!require(RColorBrewer)){
   install.packages("RColorBrewer")

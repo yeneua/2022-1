@@ -17,6 +17,7 @@ if(!require("RColorBrewer")) {    #색상
 }
 #버지니어 사망률 그래프
 graphics.off()
+par(mfrow=c(1,2))
 VADeaths #사망률 그래프 -> 2차분류표(도시, 시골별, 연령 남녀사망률) - 비율
 # 누적막대그래프
 barplot(VADeaths, col = heat.colors(5), #color속성 - 연령.  x축 - 열, y축 - 퍼센트(비율)
@@ -40,21 +41,25 @@ Sys.setenv(JAVA_HOME='C:\\Program Files\\OpenJDK\\openjdk-8u302-b08')
 file=file.choose() #medical_busan.xlsx 파일 불러오기
 data10 = read.xlsx(file, sheetIndex = 1, header=T, encoding = "UTF-8") #sheet 번호를 인덱스로 줌(엑셀파일)
 data20 = read.xlsx(file, sheetIndex = 2, header=T, encoding = "UTF-8")
-data10 = read.csv(file,header=T)
+# data10 = read.csv(file,header=T) csv파일 읽어올 때때
 
 install.packages("readxl")
 library(readxl)
-data10 <- read_excel("medical_busan.xlsx", sheet = '데이터10') #16 obs, 25 var
-data20 <- read_excel("medical_busan.xlsx", sheet = '데이터20') #16 obs, 27 var
+data10 <- read_excel("data/medical_busan.xlsx", sheet = '데이터10') #16 obs, 25 var
+data20 <- read_excel("data/medical_busan.xlsx", sheet = '데이터20') #16 obs, 27 var
+# data <- read.csv(file, header = T ) # csv파일 읽어올때
+# u <- read_xlsx(path="data/medical_busan.xlsx")
 
+library(reshape2)
 # reshape2에서 제공하는 변환은 크게 melt(wide to long), cast(long to aggregate)
-d10 <- melt(id=1, data10) #id=1(기준 : 1 - 시도별). 시도를 기준, 나머지는 변수들은 전부 값으로.
+d10 <- melt(id=1, data10) #id=1(기준 : 1 - 1열.시도별). 시도를 기준, 나머지는 변수들은 전부 값으로.
 # 2020년 데이터를 구별로 long하에 데이터 변환
 d20 <- melt(id=1, data20)
+# dcast(d20, sido~...) : 다시 원래대로 돌리기
 
 #전체 병원수 확인
 sum.d10 <- d10  %>%
-  group_by(sido) %>%
+  group_by(sido) %>% # 구 기준으로 그룹핑
   summarise(count10 = sum(value))
 
 #bar chart 작성
@@ -62,7 +67,8 @@ barplot(sum.d10$count10,
         main=paste("2010년 부산시 주요구별 과목별 병원현황"), #title
         ylab="병원수", #빈도수
         ylim=c(0,400), #y축 범위
-        col=brewer.pal(16,"Set3"), 
+        # col = viridis_pal(option="rocket"),
+        col=brewer.pal("Set3"),
         names=sum.d10$sido, #x축 label이름
         cex.names=0.6)
 abline(h=seq(0,400,50),lty=3) #선 그리기(선종류 : 3)
@@ -88,15 +94,15 @@ sum.d20 <- d20  %>%
 
 data.t <- data.frame(sum.d20$sido, sum.d10$count10, sum.d20$count20)
 with(data.t,
-     barplot(cbind(sum.d10.count10,sum.d20.count20)~sum.d20.sido, 
+     barplot(cbind(sum.d10.count10,sum.d20.count20)~sum.d20.sido,  # 시도별로 count10&count20
              main=paste("2010과 2020년 부산시 주요구별 과목별 병원현황"),
-             beside = T,
+             # beside = T,
              ylab="병원수",
              xlab="구별",
              ylim=c(0,450),
              col=c("red", "blue"), 
              names=sum.d20.sido, cex.names=0.6))
-
+# barplot - y~x.  y:numeric, x:categorical
 graphics.off()
 
 #모자이크 그림 - 비율을 나타내줌
@@ -107,13 +113,13 @@ dd10<-subset(d10,
              variable !='진단검사의학과' & variable !='핵의학과'  & variable !='병리과' & variable !='결핵과' & variable !='흉부외과'
              & variable !='재활의학과' & variable !='신경과'  & variable !='영상의학과' & variable !='가정의학과' & variable !='신경외과' )
 c <- dd10$value
-dim(c) <- c(16,14) #16개 구. 진료과목 14개. => 행 : 구
+dim(c) <- c(16,14) #16개 구. 진료과목 14개. => (행,열) : 행에는 구 이름. 열에는 병원진료과목
 rownames(c) <- dd10$sido[1:16] #행이름 부여(sido)
 colnames(c) <- unique(dd10$variable) #열 이름 부여
 c
 mosaicplot(c, color=rainbow(14), main="부산 지역별 진료과목 현황")
 c1<-t(c) #행과 열을 바꿔줌
-mosaicplot(c1, color=rainbow(14), cex=1, main="2010년 부산 지역별 진료과목 현황")
+mosaicplot(c1, color=rainbow(16), cex=1, main="2010년 부산 지역별 진료과목 현황")
 #폭이 넓다 => 많다는 것
 
 
@@ -145,3 +151,30 @@ e1<-t(e)
 mosaicplot(e1, color=terrain.colors(14), cex=1, main="2021년 부산 지역별 진료과목 현황")
 
 
+data20
+z20 <- melt(id = 1, data20)
+z20
+z20 <- subset(z20,variable !='진단검사의학과' & variable !='핵의학과'  & variable !='병리과' & variable !='결핵과' & variable !='흉부외과'
+              & variable !='재활의학과' & variable !='신경과'  & variable !='영상의학과' & variable !='가정의학과' & variable !='신경외과')
+z20
+zz20 <- z20$value
+zz20
+dim(z20)
+dim(zz20)
+ncol(zz20)
+nrow(zz20)
+is.vector(zz20)
+length(zz20)
+dim(zz20) <- c(16,16)
+rownames(zz20) <- z20$sido[1:16]
+colnames(zz20) <- unique(z20$variable)
+zz20
+mosaicplot(zz20, col = rainbow(16), main="zz20")
+tzz20 <- t(zz20)
+mosaicplot(tzz20, col = rainbow(16), main="zzz")
+
+head(z20)
+z20 <- z20 %>% group_by(sido) %>% summarise(count = sum(value))
+z20
+zz20 <- z20$count
+zz20

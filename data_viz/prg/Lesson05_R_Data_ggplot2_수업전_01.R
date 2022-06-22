@@ -21,6 +21,9 @@ if(!require(RColorBrewer)){
 # z : 깊이 (mm) - 계량형데이터
 # table : 다이아몬드 꼭지의 폭과 제일 넓은 곳의 거리 - 계량형데이터
 ##########################################
+
+# 무게(carat), 투명도(clarity)가 가격과 어떠한 관계?
+
 head(diamonds)
 plot(diamonds$carat, diamonds$price, type="p") #graphics => 캐럿이 클수록 가격이 높다. 
 qplot(carat, price, data = diamonds, geom="point") #ggplot2
@@ -36,7 +39,7 @@ qplot(clarity, data=diamonds, fill=cut, geom="bar") #변수한개
 graphics.off()
 
 # 1 단계 : 미적 매핑
-# ggplot()을 생성하면서 데이터와 미적 매핑 정보를 지정합니다.(x축 caret y축은 price)
+# ggplot()을 생성하면서 데이터와 미적 매핑 정보를 지정합니다.(x축 caret, y축은 price)
 # data : 데이터 지정
 # aes() : 시각적 속성 지정
 # x – X축 데이터 지정(위치정보) + color, fill 등도 넣을 수 있음

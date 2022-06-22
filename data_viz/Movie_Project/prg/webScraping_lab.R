@@ -37,7 +37,7 @@ reviews
 #ㄴ-> cleansing
 save(reviews, file="reviews.rda") #save해두기
 save(titles, file="titles.rda")
-#save(predict, file="predict.rda")
+save(predict, file="predict.rda")
 ####  predict -> positive, negative 개수 세준 것
 
 positive <- readLines("data/positive.txt", encoding='UTF-8') #긍정어사전
@@ -69,9 +69,9 @@ if(pos.cnt > neg.cnt){ # predict를 만드는 코드
 # => predict가 긍정?부정?인지 판단
 
 #### polarity 평가 ###
-
-load("data/titles.rda")
-load("data/predict-1.rda")
+getwd()
+load("titles.rda")
+load("predict.rda")
 titles[1]
 predict[1] # 인덱스가 1에 해당하는 내용
 table(titles) #table() : 빈도확인
@@ -87,7 +87,7 @@ polarity=(p-n)/(p+n)
 polarity
 
 # 그대가조국 영화
-i = which(titles == "그대가 조국") 
+i = which(titles == "닥터 스트레인지: 대혼돈의 멀티버스") 
 i
 s = predict[i] 
 s

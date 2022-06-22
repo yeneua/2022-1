@@ -1,6 +1,6 @@
 #install.packages("xlsx")
 #library(xlsx) => xlsx #xlsx패키지는 자바가 설치되어야 함
-file <- choose.files() #file open #data.csv 불러오기기
+file <- choose.files() #file open #data.csv 파일 불러오기
 #popData <- read.xlsx(file, 1, encoding = "UTF-8") => 엑셀 파일을 불러올 때
 popData <- read.csv(file, header=T)
 class(popData)
@@ -51,11 +51,12 @@ pop.area1 <- cbind(pop.area,pop.pnt10,pop.pnt18)
 
 # Compute row and column sums for a matrix:
 x <- cbind(x1 = 3, x2 = c(4:1, 2:5))
-dimnames(x)[[1]] <- letters[1:8]
+dimnames(x)[[1]] <- letters[1:8] #행이름부여
 x[[1]]
 x
 
 apply(x, 1, mean) #x를 행(1)별로 mean
+apply(x, 2, mean)
 apply(x, 2, sort) #열별로 오름차순 정렬
 apply(x, 2, sort(decreasing = TRUE))
 row.sums <- apply(x, 1, sum)
@@ -117,6 +118,8 @@ split(d$income, list(d$gender, d$over25))#성별&over25별로 나누기(split)
 head(warpbreaks)
 levels(warpbreaks$tension)
 str(warpbreaks)
+summary(warpbreaks)
+colnames(warpbreaks)
 
 by(warpbreaks[, 1:2], warpbreaks[,"tension"], summary)
 by(warpbreaks[, 1],   warpbreaks[, -1],       summary)
@@ -129,7 +132,6 @@ tapply(pop.area$area10, pop.area$area,sum)
 class(tapply(pop.area$area10, pop.area$area,sum)) #array
 tapply(pop.area$area18, pop.area$area,sum)
 
-
 ###########################################
 # plyr 패키지 사용 split->apply->combine
 ###########################################
@@ -138,6 +140,10 @@ library(plyr) #메모리를 사용함
 data("baseball") #데이터 불러오기기
 class(baseball)
 dim(baseball)
+head(baseball)
+str(baseball)
+summary(baseball$sh)
+quantile(baseball$bb)
 result = ddply(baseball,  #data
                .(id),     #기준
                summarise, #
@@ -168,7 +174,7 @@ colnames(baseball)
 
 ##################################################################인구 데이터를 이용하여 인구를 계산###########################################################
 library(plyr)
-pop <- ddply(popData, .(area), summarise, pop.a10 = sum(pop10, na.rm=T),pop.a18 = sum(pop18, na.rm=T),
+pop <- ddply(popData, .(area), summarise, pop.a10 = sum(pop10, na.rm=T),pop.a18 = sum(pop18, na.rm=T))#,
              grdp.a10=sum(grdp10, na.rm=T),grdp.a18=sum(grdp18, na.rm=T))
 pop
 
@@ -177,10 +183,14 @@ pop.pcnt10<-with(pop, round(pop.a10/sum(pop.a10)*100,1))
 pop.pcnt18<-with(pop, round(pop.a18/sum(pop.a18)*100,1))
 
 label1<-paste(pop$area, "(", pop.pcnt10, "%)")
+l <- sprintf("%s ( %f )" ,pop$area, pop.pcnt10) #이렇게도 가능
 label2<-paste(pop$area, "(", pop.pcnt18, "%)")
 par(mfrow=c(1,2))
+
 with(pop, pie(pop.a10, labels=label1, col=rainbow(length(area)), main="2010년도 권역별 인구비율"))
 with(pop, pie(pop.a18, labels=label2, col=rainbow(length(area)), main="2018년도 권역별 인구비율"))
+# pie(pop$pop.a10,label=label1,col=rainbow(length(pop$area))) # with안쓰고 -> $dollorsign해줘야함
+
 
 #권역별 grdp
 #권역별 grdp - (내가 한 거)
@@ -210,8 +220,9 @@ library( reshape2 )
 data(smiths)
 smiths
 m = melt( id =1:2 , smiths )	#데이터형태 변경하기 id=1:2 기준(1,2열)
-x = dcast(m , subject + time~... ) #원래대로 전환
-
+m
+x = dcast(m , subject + time~... ) #원래대로 전환. dcast() : dataframe으로 cast
+x
 
 ##################################################
 #data.table (속도를 높여줌)
@@ -225,3 +236,4 @@ system.time(x<- DF[ DF$y == "C" , ])
 DT = as.data.table( DF )
 setkey( DT , y )
 system.time( x <- DT[ J( "C" ) , ])
+
