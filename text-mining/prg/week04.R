@@ -13,7 +13,7 @@ dim(mtcars)
 subset(mtcars, subset = (mpg > 30)) #mpg(연비)가 30이상인 것만
 subset(mtcars, subset = (mpg > 30), select = mpg) #mpg(연비)가 30이상인 것 중 mpg 데이터만 가져옴
 subset(mtcars, subset = (cyl == 4 & am == 1), select = c(mpg, hp, wt, am)) #mpg, hp, wt, am 열만
-subset(mtcars, subset = (cyl == 4 & am == 1), select = c(mpg, hp, wt, am)) #mpg, hp, wt, am 열만 빼고
+subset(mtcars, subset = (cyl == 4 & am == 1), select = -c(mpg, hp, wt, am)) #mpg, hp, wt, am 열만 빼고
 
 subset(mtcars, subset = (mpg < mean(mpg)), select = mpg) #mpg가 평균이하인 것만 추출
 

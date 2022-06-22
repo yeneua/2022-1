@@ -1,0 +1,158 @@
+---
+title: "week08"
+---
+
+```{r}
+raw_moon <- readLines("../data/speech_moon.txt", encoding = "UTF-8")
+head(raw_moon)
+class(raw_moon)
+```
+
+```{r}
+library(stringr)
+```
+
+
+```{r}
+txt <- "치킨은!! 맛있다. xyz 정말 맛있다 !@#"
+txt
+```
+
+```{r}
+txt <- str_replace_all(txt,"[^가-힣]", replacement = " ") # 한글이 아닌(^) 모든 것을 공백으로치환해서 저장
+```
+
+
+```{r}
+# 한글 이외의 것은 전부 공백으로
+moon <- raw_moon %>% str_replace_all("[^가-힣]", " ") # %>% : ~에서라는 의미
+head(moon)
+```
+```{r}
+# 앞뒤공백 없애기 - str_trim()
+moon <- str_trim(moon)
+head(moon)
+
+```
+
+```{r}
+# 가운데 공백없애기 str_squish() : 공백 다 없애줌
+moon <- str_squish(moon)
+head(moon)
+```
+```{r}
+class(moon)
+```
+
+```{r}
+# tibble형태로 바꾸기 - 보기좋은 형태로 나옴
+library(dplyr)
+moon <- as_tibble(moon)
+moon
+
+```
+<br>토큰화하기 - 어떤 기준점으로 쪼갬
+<br>어떤기준? - 문장단위, 단어단위, ...
+```{r}
+# install.packages("tidytext")
+library(tidytext)
+```
+
+```{r}
+text <- tibble(value= "대한민국은 민주공화국이다. 대한민국의 주권은 국민에게 있고, 모든 권력은 국민으로부터 나온다.")
+text
+```
+
+```{r}
+# unnest_tokens() : 토큰화함수
+text %>% unnest_tokens(input = value, output = word, token = "sentences") # tibble의 value값 이용, output의 변수명을 word로. 토큰화 기준을 sentences로
+# => sentences로 단위로 쪼갰더니, 하나에서 두개가됨
+```
+```{r}
+text %>% unnest_tokens(input = value, output = word, token = "words") # token="words" : 단어단위로(띄어쓰기)
+```
+```{r}
+text %>% unnest_tokens(input = value, output = word, token = "characters") # 한글자한글자
+```
+
+```{r}
+moon_space <- moon %>%
+  unnest_tokens(input = value, output=word, token="words") #단어중심토큰화
+```
+
+```{r}
+moon_space
+```
+
+<br>
+단어빈도분석하기
+```{r}
+#moon_space <- moon_space %>% count(fword)
+moon_space
+```
+
+```{r}
+# 단어의 길이
+str_count("배")
+str_count("배배배")
+```
+
+```{r}
+# 단어의 빈도수
+moon_space <- moon_space %>%
+  count(word, sort = T) # 단어의 길이를 세고, 정렬
+```
+
+```{r}
+# 단어의 길이가 1보다 많은 것만
+moon_space <- moon_space %>% 
+  filter(str_count(word) > 1)
+```
+
+
+```{r}
+moon_space
+```
+
+
+```{r}
+top20_moon <- moon_space %>% head(20)
+```
+
+
+```{r}
+top20_moon
+```
+
+```{r}
+library(ggplot2)
+ggplot(top20_moon, aes(x = reorder(word, n), y=n)) + # x축:word(빈도순으로정렬), y:n(카운트 된숫자)
+  geom_col()+
+  coord_flip() #x,y축뒤집기
+```
+
+
+<br>워드클라우드
+```{r}
+#library(ggwordcloud)
+
+```
+
+```{r}
+library(ggwordcloud)
+ggplot(moon_space, aes(label = word, size = n))+
+  geom_text_wordcloud(seed=1234)+
+  scale_radius(limits = c(3,NA), # 최소, 최대 단어빈도 지정
+               range=c(3,30)) # 최소, 최대 글자크기
+```
+
+
+```{r}
+ggplot(moon_space, aes(label = word, size= n, col = n)) +
+  geom_text_wordcloud(seed = 1234) +
+  scale_radius(limits = c(3, NA),
+               range = c(3,30)) +
+  scale_color_gradient(low = "#66aaf2", high = "#004EA1") +
+  theme_minimal()
+```
+

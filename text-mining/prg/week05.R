@@ -9,7 +9,7 @@ class(x) #character
 nchar(x) # 15 char가 몇개인지 불러오기. 공백 포함
 length(x) #1  전체 요소.벡터가 몇개인지
 
- y <- c("We", "have", "a", "dream")
+y <- c("We", "have", "a", "dream")
 class(y) #character
 nchar(y) # 2 4 1 5 공백을 제외한 각각의 벡터의 구성요소의 개수.길이
 length(y) # 4
@@ -43,7 +43,7 @@ fox.said.words[3]
 fox.said.words[1]
 
 unlist(strsplit(fox.said, split= " "))[3]
-strsplit(fox.said, split= " ")[[1]] #list니까 list indexing
+strsplit(fox.said, split= " ")[[1]] #list니까 list indexing #[[]] : 리스트 안에 그 값 자체를 가져오는 것. 자루 아님.
 strsplit(fox.said, split= " ")[[1]][[3]]
 
 
@@ -54,38 +54,51 @@ p3 <- "What makes the desert beautiful is that somewhrere it hides a well"
 
 littleprince <- c(p1,p2,p3)
 littleprince #3개의 문자 벡터가 저장
+class(littleprince) #=> character vector
+is.vector(littleprince) #=> TRUE
 strsplit(littleprince, split= " ") #각각이 공백을 기준으로 분할. 리스트로 리턴.
 # ? 왜 리스트로 리턴? => 각각의 데이터 마다 길이도 다르고, 타입이 다르기 때문에.  방법이 리스트밖에 없다.
+length(strsplit(littleprince, split=" ")) # => 3
+nchar(strsplit(littleprince, split = " ")) # => 125 111 104
+
 strsplit(littleprince, split=" ")[[3]]
 strsplit(littleprince, split=" ")[[3]][[5]] #beautiful
 strsplit(littleprince, split=" ")[[1]][[7]] #afternoon
 
 #the는 각각의 원소마다 다 들어있다. -> 따로따로 뽑는게 아니라 unique한것만 뽑고싶다.=> unique() 이용
 fox.said <- "WHAT IS ESSENTIAL is invisible to the Eye"
-strsplit(fox.said, split = " ") #공백을 기준으로 구분
+strsplit(fox.said, split = " ") #공백을 기준으로 구분 # => list
 fox.said.words <- strsplit(fox.said, split = " ")[[1]]
 fox.said.words
+class(fox.said.words) # => "character" vector
+is.vector(fox.said.words) # => TRUE
+
+#unique()
+# unique() - dataframe일 경우, 하나의 행 전체(하나의 data)가 같으면 삭제됨
 unique(fox.said.words) # 대소문자 구문: IS, is 다 나옴
 #고유한 단어들만 가져오고싶다. 중복없이
 unique(tolower(fox.said.words)) #is가 하나만 나옴. 소문자로 바꿔줬기떄문에.
 unique(toupper(fox.said.words))
 
-paste() #결합할때. 벡터를 하나로 합쳐줌
+paste() #결합할때. 벡터를 하나로 합쳐줌. 결과 vector로 반환
 paste("Everyone", "wants", "to","fly") # => "Everyone wants to fly"
 #구분자를 지정하지 않으면 공백을 기본으로
 paste("Everyone", "wants", "to","fly", sep = "-")
 paste("Everyone", "wants", "to","fly", sep = "")
 paste0("Everyone", "wants", "to","fly") #윗행과 동일한 결과. 전부 붙이는 것 : paste0
 
-fox.said.words #8개로 구성된 하나의 벡터
+fox.said.words #8개로 구성된 하나의 벡터. length(fox.said.words) => 8(길이가 8)
 paste(fox.said.words)  #하나의 벡터이기 때문에 수행할것X
+#paste() : 벡터들을 결합하는 함수
 
+# ?paste - Concatenate vectors after converting to character.(문자로 변환후 벡터들 연결)
 #문자가 아닌경우, 문자로 변환시켜 return
-paste(pi, sqrt(pi)) #pi : 3.14 ~~
+paste(pi, sqrt(pi)) #pi : 3.14 ~~ 
+class(paste(pi, sqrt(pi))) # => "character"
 
 #문자열과 결합하여 사용
 paste("25 degrees Celsius is", 25*1.8+23, "degree Fahrenheight")
-
+class(paste("25 degrees Celsius is", 25*1.8+23, "degree Fahrenheight")) #=> "character"
 
 #벡터간의 연산도 지원
 heroes <- c("Batman", "Captain America", "Hulk")
@@ -93,6 +106,7 @@ colors <- c("Black", "Blue", "Green")
   
 # 두개의 벡터를 paste
 paste(heroes, colors)
+paste(heroes, letters[1:3]) # letters[:3]하면 안됨. letters[1:3]으로 해야함. 파이썬이랑 다르다. R에서 인덱스 시작은 1
 
 #하나의 요소가 부족하다면, 재사용되는 형태로 붙여짐
 paste("Type",1:10) #공백을 기준으로 paste합침
@@ -100,7 +114,7 @@ paste("Type",1:10) #공백을 기준으로 paste합침
 paste(heroes, "wants", "to" , "fly") #heroes안에 있는 요소들을 하나하나 꺼내서 뒤에 거랑 붙임. 뒤에 내용용들이 재사
 
 #paste함수안의 collapse인자
-fox.said.words
+fox.said.words # vector
 paste(fox.said.words, collapse = " ") #공백으로 하나로 합침
 paste(fox.said.words, collapse = "-")
 
@@ -127,14 +141,14 @@ outer()
 outer(1:3, 1:3)
 outer(c(1,2,3), c(1,2,3)) #각각의 숫자들과 쌍을 이루는 모든 가능한 조합들의 곱
 
-outer(x,y, fun= ) #기본 func: 곱
+outer(x,y, fun= ) #기본 func: 곱("*")
 
 countries <- c("KOREA", "US", "EU")
 stat <- c("GDP", "Pop", "Area")
 
 outer(countries, stat, FUN = paste) #함수 - 곱 아니고 paste
 outer(countries, stat, FUN = paste, sep = "-")
-
+outer(stat, countries, paste) #처음에 오는 인자가 행방향
 
 #고객 주문 결과를 보여주는 시나리오
 
@@ -145,7 +159,7 @@ deliveryday <- 2
 paste("hello" , customer, ",you order of ",buysize,
       "product(s) will be delivered within ", deliveryday,"days")
 
-#sprintf() - 문장내에 변수랑 섞어서 사용 가능
+#sprintf() - 문장내에 변수랑 섞어서 사용 가능. 파이썬처럼
 sprintf("hello %s, you order of %s will be delivered within %s",
         customer, buysize, deliveryday) #한꺼번에 지정. 직관적
 
@@ -161,6 +175,7 @@ sprintf
 #sprintf 장점 여러가지 유형으로 출력할 수 있다.
 sprintf("hello %s, you order of %s will be delivered within %.2f",
         customer, buysize, deliveryday) #  소수점
+sprintf("hello %s, i'm %d years old", customer, buysize) # %d : integer, %s : string(NA도 "NA"로 변환됨)
 
 
 # 텍스트 분석을 하다보면, 특정 부분만 뽑아서 작업을 하는 경우가 생김
@@ -169,6 +184,7 @@ sprintf("hello %s, you order of %s will be delivered within %.2f",
 substr("Text Analytics", start = 1, stop = 4) #첫번째부터 4번째까지 인덱싱
 substr("Text Analytics", start = 6, stop = 14)
 substr("Text Analytics", start = 3, stop = 10) #공백포함
+substr("Brooklyn Nine Nine",10,13)
 
 #substring() : 시작점을 지정해주면, 거기서부터 끝까지 가져오는 것
 substring("Text Analytics", 6) #뒤에 인자가 하나. 6부터 끝까지
@@ -177,6 +193,7 @@ substring("Text Analytics", 6) #뒤에 인자가 하나. 6부터 끝까지
 class <- c("Data analytics", "Data visualization", "Data science introduction")
 substr(class, 1, 4) #각각의 요소에서 1~4번째까지. 동일한 위치
 substring(class, 6) #substring - 끝 위치 정확히 모를때 사용하면 좋다.
+substring(class, 10)
 
 countries <- c("Korea, KR", "United states, US", "China, CN") #길이가 다 다른 문자
 #각각의 젤 뒤에 약자만 가지고 오고 싶다하면
@@ -195,9 +212,10 @@ landnames <- names(islands)
 ?grep
 grep(pattern = "New", x = landnames) #New라는 단어가 포함된 섬 이름
 # => 이름이 아니라 원소의 인덱싱 값을 보여줌
+grep("New",landnames)
 
-index <- grep(pattern = "New", x = landnames)
-landnames[index]
+index <- grep(pattern = "New", x = landnames) # 1.인덱스 값을 저장하고
+landnames[index] # 2. 출력
 
 landnames[grep(pattern = "New", x = landnames)]
 
@@ -210,3 +228,13 @@ grep(pattern = " ", x= landnames, value = TRUE)
 #텍스트를 한줄한줄 읽어서 리스트로 들어온것을, unlist해서 전체적인 말뭉치. 그것을 다시 하나의 벡터로 collapse
 #문자를 크롤링하면 동일한 패턴을 가지게 되는 경우가 많이 있다. 패턴들을 기준으로 분할, 추출, 그 이후에 것 가져오기, 기준이 포함된 .. 등등 작업을 하게 됨
 
+
+#lower.tri() - 강의자료에 있더라고 ~
+?lower.tri()
+m2 <- matrix(1:20, 4,5) #1~20까지 행렬. 4행 5열열
+m2
+lower.tri(m2) #대각선 기준으로 밑에 부분
+upper.tri(m2) #대각선 기준으로 위에 부분
+m2[lower.tri(m2)]
+m2[upper.tri(m2)]
+m2

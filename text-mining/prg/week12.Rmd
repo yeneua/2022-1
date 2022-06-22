@@ -1,0 +1,248 @@
+---
+title: "week12"
+---
+```{r}
+library(quanteda)
+```
+
+```{r}
+data_corpus_inaugural # 미국 대통령 취임 연설사
+```
+
+```{r}
+summary(data_corpus_inaugural)
+```
+```{r}
+class(data_corpus_inaugural)
+```
+```{r}
+library(tidytext)
+library(tibble)
+library(dplyr)
+```
+
+```{r}
+# corpus -> tibble 형태
+tidy(data_corpus_inaugural)
+# => 하나의 문서가 한 행에
+```
+
+```{r}
+tidy(data_corpus_inaugural) %>% 
+  filter(Year > 1990)
+```
+```{r}
+# 대통령별로 한 행으로. 재선 대통령도 있으니까 ..
+tidy(data_corpus_inaugural) %>% 
+  filter(Year > 1990) %>% 
+  group_by(President, FirstName)
+```
+```{r}
+us.president.address <- tidy(data_corpus_inaugural) %>%
+  filter(Year > 1990) %>% 
+  group_by(President, FirstName) %>% 
+  summarise_all(list(~trimws(paste(., collapse = " ")))) %>% # group_by에 사용했던것을 제외한 나머지 변수들을 합침. 연임한 대통령들의 연설문을 하나로 합쳐줌
+  arrange(Year) %>% # 연도별로 정렬
+  ungroup() # 그룹해제
+us.president.address
+# => Year, Party, text보면 데이터가 paste()된 것 확인 가능
+```
+```{r}
+library(tm)
+?DataframeSource # => doc_id, text 필드 필요
+```
+
+```{r}
+# 추가적인 전처리
+us.president.address %>% 
+  select(text, everything()) # 순서 - text열을 제일 앞으로 가져옴. everything() : 모두
+```
+
+```{r}
+# doc_id 만들기
+us.president.address <- us.president.address %>% 
+  select(text, everything()) %>% 
+  add_column(doc_id = 1:nrow(.), .before = 1) # 문서번호 부여, 제일 앞으로 이동
+us.president.address
+```
+```{r}
+address.corpus <- VCorpus(DataframeSource(us.president.address))
+address.corpus
+```
+
+```{r}
+# lapply(address.corpus[1], content) # 데이터확인
+```
+
+
+***12-2***
+전처리
+```{r}
+# 소문자로
+address.corpus <- tm_map(address.corpus, content_transformer(tolower))
+```
+
+```{r}
+# 불용어 사전 만들기
+#sort(stopwords("english"))
+Mystopwords <- c(stopwords("english"), c("must", "will", "can")) # 불용어 추가
+# => address.corpus[[1]]$content : 데이터확인
+```
+
+
+```{r}
+# 불용어처리
+address.corpus <- tm_map(address.corpus, removeWords, Mystopwords)
+```
+
+```{r}
+# 문장부호 삭제
+address.corpus <- tm_map(address.corpus, removePunctuation)
+# => lapply(address.corpus[1], content) : 데이터확인
+```
+
+```{r}
+# 숫자삭제
+address.corpus <- tm_map(address.corpus, removeNumbers)
+```
+
+```{r}
+# 공백삭제
+address.corpus <- tm_map(address.corpus, stripWhitespace)
+```
+
+```{r}
+# 앞뒤 여백 삭제
+address.corpus <- tm_map(address.corpus, content_transformer(trimws))
+```
+
+
+```{r}
+# 동의어 처리
+address.corpus <- tm_map(address.corpus, content_transformer(gsub),
+       pattern = "america|american|americans|america",
+       replacement = "america")
+```
+
+```{r}
+lapply(address.corpus[1], content)
+```
+
+<br>
+DTM
+```{r}
+address.dtm <- DocumentTermMatrix(address.corpus)
+```
+
+```{r}
+# dtm 정보
+inspect(address.dtm)
+```
+```{r}
+# dtm을 matrix로
+# as.matrix(address.dtm)
+```
+
+```{r}
+# colSums를 하면 단어의 빈도수 - 각각 개별적인 term frequency
+termfreq <- colSums(as.matrix(address.dtm))
+```
+
+```{r}
+length(termfreq)
+# => dtm에서 제공한 정보와 같은지 확인
+```
+```{r}
+termfreq[head(order(termfreq, decreasing = TRUE))] # order() : 인덱스
+```
+```{r}
+termfreq[head(order(termfreq, decreasing = TRUE), 10)] # 상위10개
+```
+
+```{r}
+termfreq[tail(order(termfreq, decreasing = TRUE), 10)] # 하위10개
+```
+```{r}
+findFreqTerms(address.dtm, lowfreq = 40) # 최소 40번 이상
+```
+
+```{r}
+findFreqTerms(address.dtm, lowfreq = 40, highfreq = 80)
+```
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+class(termfreq)
+```
+
+```{r}
+# ggplot은 dataframe
+termfreq.df <- data.frame(word = names(termfreq), frequency = termfreq) # 단어/빈도로 구성된 데이터프레임
+head(termfreq.df)
+```
+```{r}
+ggplot(subset(termfreq.df, frequency >= 40),
+       aes(x = word, y = frequency, fill = word)) +
+         geom_col(color = "dimgray") +
+         labs(x = NULL, y = "Term Frequency(count)")
+```
+
+```{r}
+ggplot(subset(termfreq.df, frequency >= 40),
+       aes(x = reorder(word, frequency), y = frequency, fill = word)) +
+  geom_col(color = "dimgray", width = 0.5, show.legend = FALSE) +
+  geom_text(aes(label = frequency), size = 3.5, color = "black", hjust = 0) +
+  labs(x = NULL, y = "Term Frequency(count)") + 
+  coord_flip()
+```
+
+```{r}
+inspect(address.dtm)
+```
+```{r}
+Docs(address.dtm)
+```
+
+
+```{r}
+row.names(address.dtm) <- c("Clinton", "Bush", "Obama", "Trump", "Biden")
+Docs(address.dtm)
+```
+
+```{r}
+address.tf <- tidy(address.dtm) # tidytext형태로
+address.tf
+```
+```{r}
+address.tf <- address.tf %>% 
+  mutate(document = factor(document, levels = c("Clinton", "Bush", "Obama", "Trump", "Biden"))) %>%
+  arrange(desc(count)) %>%  # count기준으로 정렬
+  group_by(document) %>%
+  top_n(n = 10, wt = count) %>% # document(각각의 대통령)별로 상위 10개 단어
+  ungroup()
+address.tf
+# => 동률이 있기 때문에 결과 63X3
+```
+```{r}
+# 각각의 대통령별로 그림
+ggplot(address.tf,
+       aes(term,count,fill=document))+
+  geom_col(show.legend=FALSE)+
+  facet_wrap(~document, ncol=2,scales="free")+
+  labs(x=NULL, y="Term Frequency count")+
+  coord_flip()
+```
+
+```{r}
+ggplot(address.tf,
+       aes(reorder_within(x=term,by=count,within=document),y=count,fill=document))+ # reorder_within() : 각각에 대해서, 각각의 그래프에서 order를 해줘라
+  geom_col(show.legend = FALSE)+
+  facet_wrap(~document, ncol=2,scales="free")+
+  scale_x_reordered()+ #reorder_within()을 쓰면 같이 써줘야함
+  labs(x=NULL, y="Term Frequency count")+
+  coord_flip()
+```
+

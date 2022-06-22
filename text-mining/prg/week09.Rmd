@@ -1,0 +1,283 @@
+---
+title: "week09"
+---
+```{r}
+library(tm)
+```
+
+```{r}
+data(crude)
+crude
+#=> corpus : metadate(부가데이터), content
+```
+
+```{r}
+crude[[1]]
+# => metadata:15개의 요소로 구성
+# content: 문자가 527개
+```
+```{r}
+# 요소에 접근
+crude[[1]]$content
+```
+
+```{r}
+crude[[1]]$meta
+```
+```{r}
+text <- c("Crash dieting is not the best way to lose weight. http://bbc.in/1G0J4Agg",
+          "A vegetar$ian diet excludes all animal flesh (meat, poultry, seafood).",
+          "Economists surveyed by Refinitiv expect the economy added 160,000 jobs.")# vector
+```
+<br>
+Vcorpus() : 코퍼스로 바꾸는 함수
+
+```{r}
+getSources() # 데이터 구조에 따른 인식함수 종류
+```
+
+```{r}
+VectorSource(text)
+```
+
+```{r}
+VCorpus(VectorSource(text)) # 코퍼스로 만들기
+```
+
+```{r}
+corpus.docs <- VCorpus(VectorSource(text))
+class(corpus.docs)
+```
+```{r}
+corpus.docs
+```
+
+```{r}
+# inspect() : 코퍼스 content정보
+inspect(corpus.docs[1])
+```
+```{r}
+inspect(corpus.docs[[1]]) # 대괄호 두개: 조금 더 구체적인 정보
+```
+
+```{r}
+# corpus에서 문자(우리가 분석할, 활용할 내용)만 가져오기. content추출
+as.character(corpus.docs[[1]])
+```
+```{r}
+lapply(corpus.docs, as.character) # 우리가 뽑고자 하는 문서내용 반복적으로(lapply)
+```
+```{r}
+str(corpus.docs)
+# => 각각의 리스트 요소에 content, meta데이터 있음
+```
+```{r}
+corpus.docs[[1]]$content  #content만 추출(as.character()와 동일한결과)
+```
+```{r}
+lapply(corpus.docs, content) # corpus.docs에서 content만 뽑는 작업 반복
+```
+
+```{r}
+unlist(lapply(corpus.docs,content))
+```
+
+```{r}
+# 벡터로 변환
+as.vector(unlist(lapply(corpus.docs,content)))
+```
+```{r}
+paste(as.vector(unlist(lapply(corpus.docs, content))), collapse= " ") # 하나로 이어서 붙이기
+```
+```{r}
+# 메타데이터에 접근하기
+corpus.docs[[1]]$meta
+```
+```{r}
+# 메타데이터에 접근하기
+meta(corpus.docs[[1]])
+```
+
+```{r}
+# 메타데이터에 접근하기
+meta(corpus.docs[[1]], tag = "author")
+```
+```{r}
+meta(corpus.docs[[1]], tag = "id")
+```
+
+```{r}
+# 비어있는 author정보 채우기
+meta(corpus.docs[[1]], tag = "author", type = "local") <- "Dong-A"
+corpus.docs[[1]]$meta
+```
+```{r}
+cor.author <- c("Dong-A", "Ryu", "Kim")
+# meta(corpus.docs[[1]], tag = "author", type = "local") <- cor.author 이렇게 corpus.docs[[1]]에다가 부여하면 첫번째 meta에 c("Dong-A", "Ryu", "Kim")이거 그대로 들어감
+meta(corpus.docs, tag = "author", type = "local") <- cor.author
+meta(corpus.docs, tag = "author")
+lapply(corpus.docs, meta, tag = "author")
+```
+corpus : 비정형 텍스트를 구조화된 데이터로 변환한것
+<br>corpus는 크게 content(내용)와 meta데이터로 구성됨
+<br>inspect() : content만 인덱싱
+<br>meta() : 메타데이터 인덱싱 
+<br><br><br>
+
+9-2
+
+```{r}
+corpus.docs
+```
+
+```{r}
+lapply(corpus.docs, meta)
+# => 7개의 메타정보
+```
+
+
+```{r}
+category <- c("health", "lifestyle", "business")
+```
+
+
+```{r}
+# 메타 데이터에 카테고리 추가
+meta(corpus.docs, tag = "category", type = "local") <- category
+lapply(corpus.docs, meta)
+```
+
+
+```{r}
+# 메타데이터-카테고리삭제
+meta(corpus.docs, tag = "origin", type = "local") <- NULL
+lapply(corpus.docs, meta)
+```
+```{r}
+#메타데이터 - 특정 조건을 만족하는 것 추출
+tm_filter(corpus.docs, FUN = function(x)
+  any(grep("weight|diet", content(x)))) # weight 또는 diet가 들어간 단어의 결과를 논리형으로(any())
+# => documents: 2 두개의 문자열이있다
+```
+
+```{r}
+lapply(tm_filter(corpus.docs, FUN = function(x)
+  any(grep("weight|diet", content(x)))), content)
+```
+
+```{r}
+corpus.docs.filter <- tm_filter(corpus.docs, FUN = function(x)
+  any(grep("weight|diet", content(x))))
+lapply(corpus.docs.filter, content) # 복잡한 코드를 corpus.docs.filter로 저장
+```
+
+```{r}
+# meta 정보에서 특정조건 만족하는거 뽑기
+meta(corpus.docs, "author") == "Dong-A" | meta(corpus.docs, "author")== "Ryu" # corput에서 메타 정보를 뽑은 것이 dong-a와 같은지 ?
+```
+```{r}
+index <- meta(corpus.docs, "author") == "Dong-A" | meta(corpus.docs, "author")== "Ryu"
+lapply(corpus.docs[index], content)
+# author가 dong-a 혹은 ryu인것만 가져와서 그 인덱스를 가져와서 content추출
+```
+
+
+```{r}
+# corpus저장
+writeCorpus(corpus.docs)
+```
+
+```{r}
+# 파일 리스트확인
+list.files(pattern = "\\.txt")
+```
+<br>
+텍스트 정제
+```{r}
+getTransformations() # tm 패키지에서 제공하는 것들. tm_map()과 함께 사용
+```
+```{r}
+# tolower(), toupper( )-> corpus에는 적용x
+# tm패키지에서 제공하지 않는 함수를 사용할때는 content_transformer()를 같이 활용
+```
+
+```{r}
+lapply(corpus.docs, content)
+```
+
+```{r}
+# 소문자로 바꾸기
+tm_map(corpus.docs, content_transformer(tolower))
+corpus.docs <- tm_map(corpus.docs, content_transformer(tolower))
+lapply(corpus.docs, content)
+```
+<br>
+불용어(stopwords) - 사용하지않는. 의미없는단어
+```{r}
+head(stopwords("english"),30)
+```
+
+```{r}
+# tm패키지에서 기본적으로 불용어 없애는 함수 제공
+corpus.docs <- tm_map(corpus.docs, removeWords, stopwords("english"))
+lapply(corpus.docs,content)
+```
+
+```{r}
+# 해당패턴을 공백으로 없애주는 함수
+myRemoves <- content_transformer(function(x, pattern)
+                                 {return(gsub(pattern, "", x))}) # gsub()는 corpus에 사용안되기 때문에 content_tranformer()와 사용. x: corpus를 받아옴. pattern에있는 문자열은 ""(공백)으로 치환
+
+```
+
+```{r}
+# url없애기
+corpus.docs <- tm_map(corpus.docs, myRemoves, "(f|ht)tp\\S+\\s*") # url을 의미하는 정규표현식
+lapply(corpus.docs, content)
+```
+
+```{r}
+# 문장부호 없애기
+corpus.docs <- tm_map(corpus.docs, removePunctuation)
+lapply(corpus.docs, content)
+```
+
+```{r}
+# 숫자없애기
+corpus.docs <- tm_map(corpus.docs, removeNumbers)
+lapply(corpus.docs, content)
+```
+
+```{r}
+# 공백없애기
+corpus.docs <- tm_map(corpus.docs, stripWhitespace)
+lapply(corpus.docs, content)
+# => 2번째 요소보면, 제일 앞에 공백은 안없어짐 !!
+```
+
+
+```{r}
+# 제일 앞에 있는(문장 앞뒤에 있는) 공백 업애기 -> base 패키지 이용
+corpus.docs <- tm_map(corpus.docs, content_transformer(trimws))
+lapply(corpus.docs,content)
+```
+```{r}
+# 어간추출 stemDocument()
+corpus.docs <- tm_map(corpus.docs, stemDocument)
+lapply(corpus.docs, content)
+```
+
+```{r}
+#유의어. 어간이 같으니까 같은 단어로 보자 ! economist->economi
+corpus.docs <- tm_map(corpus.docs, content_transformer(gsub), #gsub()는 base 패키지 !! tm패키지가 아니니까 tm_map
+                      pattern = "economist", replacement = "economi")
+lapply(corpus.docs, content)
+```
+
+<br>
+corpus : 텍스트 분석의 기본적인 단위
+<br>content,meta
+<br>기본적인 정제 - tm 패키지에서 제공
+<br>제공하지 않는 함수는 content_transformer() 함수를 이용해 사용 가능
+<br><br>다음시간
+tidy text - 두번째 작업. 각각 단어의 빈도 추출 ..<br><br>

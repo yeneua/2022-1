@@ -1,0 +1,322 @@
+---
+title: "week07"
+---
+
+
+```{r}
+#문자 벡터
+string <- c("data analysis is useful",
+            "business analytics is helpful",
+            "visualization of data is interesting for data scientists")
+string
+```
+
+
+```{r}
+grep("data", string) # 위치 인덱스 반환
+```
+
+```{r}
+grep("data", string, value = TRUE)
+```
+```{r}
+string[grep("data", string)]
+```
+
+```{r}
+t <- "final test test"
+regexpr("test", t)
+gregexpr("test", t)
+# => 벡터 요소가 하나일때는 regexpr(), gregexpr() 결과같음
+```
+
+
+<br>grepl : 논리형으로 결과반환
+```{r}
+grepl("data", string)
+```
+<br>
+regexpr() : 데이터 위치값 제공
+```{r}
+regexpr(pattern = "data", text = string)
+```
+
+```{r}
+# => 결과 해석
+# 1 - 1 18
+# 첫번째 요소에 1번에 있다
+# 두번째 요소에는 없다
+# 세번째 요소에 18번째에 "data"가 있다
+# 
+# 4 -1 4 => length
+# "data" => 길이 4
+# 첫번째 요소에 1~4번째까지
+# 두번째 요소에는 없다
+# 세번째 요소에 18번째부터 4번째까지
+```
+
+<br>
+gregexpr() : 각각의 문자열에 대한 결과값을 리스트로 리턴
+```{r}
+gregexpr("data", string)
+
+```
+
+```{r}
+# regexpr vs gregexpr
+# regexpr : 처음 나오는 패턴의 인덱스값만 리턴
+# gregexpr : 세번째 요소에 "data"가 두 개 있음. 두 개 모두 반환
+# => 용도에 따라 사용
+# unique한 것을 찾을 때 - regexpr
+# 몇번? - gregexpr
+```
+<br>regmatches() : 패턴추출
+
+regexpr, gregexpr 패턴 위치값을 활용해서 패턴자체를 추출
+```{r}
+# ?regmatches()
+# regmatches(문자열벡터, 위치)
+```
+
+```{r}
+regmatches(x = string, m = regexpr(pattern = "data", text = string))
+# => 첫번째 등장한것만 리턴
+```
+```{r}
+regmatches(x = string, m = gregexpr(patter = "data", text = string))
+# => gregexpr()이 리스트 형태로 나오니, regmatches()의 결과도 리스트
+# => regmatches()는 regexpr(), gregexpr()를 같이 결합해서 활용
+```
+```{r}
+regmatches(string, regexpr("data", string))
+```
+```{r}
+# invert 속성 - 나머지 것들을 가져옴
+regmatches(string, regexpr("data", string), invert = TRUE)
+```
+```{r}
+regmatches(string, gregexpr("data",string),invert=TRUE)
+```
+
+
+(정리)
+
+grep() : 패턴이 포함된 요소의 인덱스, 문자 string 자체를 리턴
+<br>regexpr(), gregexpr() : 위치 리턴
+<br>regmatches() : 인덱싱을 통해서 패턴 추출
+<br><br>
+
+
+sub(), gsub() : 문자열 치환
+<br>sub() : 첫번째거만
+<br>gsub() : 그 패턴이 포함된 모든 문자열
+```{r}
+sub(pattern = "data", replacement = "text", x = string) # "data"를 "text"로 치환
+```
+```{r}
+# => sub() : 첫번째 거만 해당
+```
+
+```{r}
+gsub(pattern = "data", replacement = "text", x = string) # 모두 바꿈
+```
+strsplit()<br> strsplit(데이터,기준)
+```{r}
+strsplit(string, " ") # 공백을 기준으로 단어들을 분할 => 결과 리스트로 리턴
+```
+```{r}
+unlist(strsplit(string, " ")) # 리스트를 벡터로 바꿈 -> 하나의 말뭉치
+```
+
+```{r}
+unique(unlist(strsplit(string, " "))) # 중복단어제외 - 고유의 단어 : unique()
+```
+
+```{r}
+# 관사 제거 - is, of, for
+gsub("is|of|for", "", string)
+```
+
+```{r}
+gsub("is|of|for", "", unique(unlist(strsplit(string, " "))))
+```
+
+```{r}
+#오타수정
+sub("date", "data", unique(unlist(strsplit(string, " "))))
+```
+
+```{r}
+unique(sub("date","data", unique(unlist(strsplit(string, " ")))))
+```
+7-2
+---
+subtitle: "stringr() 패키지"
+---
+```{r}
+#install.packages("stringr")
+library(stringr)
+```
+
+```{r}
+string <- c("data analysis is useful",
+            "business analytics is helpful",
+            "visualization of data is interesting for data scientists")
+```
+<br>패턴검출 : str_detect()
+```{r}
+# str_detect() : 패턴 검출 -> grepl()과 동일한 기능
+str_detect(string = string, pattern = "data")
+```
+
+```{r}
+str_detect(string, "DATA")
+#=> 대소문자
+```
+
+```{r}
+str_detect(string, fixed("DATA", ignore_case = TRUE)) # fixed(): 대소문자구분무시
+```
+```{r}
+str_detect(c("aby", "acy","a.y"), "a.y")# . : 메타문자. 모든 문자 추출
+#=> "a.y"를 추출하고 싶은데 메타문자로 해석. a로 시작하고 y로 끝나고 가운데 모든문자
+```
+```{r}
+str_detect(c("aby", "acy", "a.y"), fixed("a.y", ignore_case = TRUE)) # fixed() : 문자 그대로의 패턴을 추출할때 자주 사용됨. 메타문자가 아닌 하나의 문자로 인식
+```
+
+```{r}
+str_detect(c("aby", "acy", "a.y"), "a\\.y") # 이스케이프문자활용. fixed()와 동일한 결과
+```
+<br>위치검출 : str_locate() - regexpr(), gregexpr()과 동일
+```{r}
+str_locate(string, "data")
+```
+```{r}
+str_locate_all(string, "data")
+# => 리스트형태로 결과
+```
+<br>문자열추출 : str_extract() - regmatches()와 동일
+```{r}
+str_extract(string, "data")
+```
+```{r}
+str_extract_all(string, "data")
+# => 리스트함수로 반환
+```
+
+```{r}
+str_extract_all(string,"data",simplify = TRUE) #리스트x. 행렬형태로 반환
+```
+
+```{r}
+unlist(str_extract_all(string, "data")) 
+# => 벡터형태로
+```
+
+```{r}
+head(sentences) # stringr에 들어있는 패키지
+```
+
+```{r}
+sentences5 <- sentences[1:5]
+sentences5
+```
+
+```{r}
+# 관사와 같이 쓰여진 단어 추출
+str_extract(sentences5, "(a|A|the|The) (\\w+)") # a, the로 시작을 하는 문자
+```
+```{r}
+str_extract_all(sentences5, "(a|A|the|The) (\\w+)")
+```
+
+
+str_match()
+```{r}
+str_match(sentences5, "(a|A|the|The) (\\w+)")
+# =>  "(a|A|the|The) (\\w+)",  "(a|A|the|The)",  "(\\w+)"로 추출된 결과, 모든 부분집합출력
+```
+
+```{r}
+str_match_all(sentences5, "(a|A|the|The) (\\w+)")
+```
+
+치환 : str_replace(), str_replace_all()
+```{r}
+str_replace(string, "data", "text")
+ #=> 첫번째 데이터만 바뀜
+```
+```{r}
+str_replace_all(string, "data","text")
+```
+
+분할:str_split()
+```{r}
+str_split(string," ")
+#=>공백을기준으로분할. 리스트로반환
+```
+
+```{r}
+str_split(sentences5, " ")
+```
+```{r}
+unlist(str_split(string, " ")) #벡터로 
+```
+
+```{r}
+unlist(str_split(sentences5, " "))
+```
+
+
+```{r}
+unique(unlist(str_split(sentences5, " "))) #중복제외
+```
+
+```{r}
+#결과 반환되는 리스트 개수 지정
+str_split(sentences5, " ", n = 3)
+# => 공백을 기준으로 끊다가 3번째 이후로는 하나로 반환
+```
+
+```{r}
+#벡터로.행렬형태로 출력
+str_split(sentences5, " ", n = 5, simplify = TRUE)
+```
+
+#추가기능들
+```{r}
+#문자열의길이
+str_length(string)
+```
+```{r}
+str_count(string, "data") #string에서 "data"몇번?
+```
+
+```{r}
+str_count(string, "\\w+") # 단어가 몇개사용?
+```
+
+```{r}
+mon <- 1:12
+# 1~9에 0을 넣고싶다. 두자리로자리맞추기. side="left":왼쪽에 채워넣음
+str_pad(mon, width = 2, side = "left", pad = "0")
+```
+```{r}
+# str_trim() : 공백없애줌
+# 제일 긴 string의 세번째 요소에 맞춰서 공백 만들고, str_trim()으로 공백제거하기  
+string <- c("data analysis is useful",
+            "business analytics is helpful",
+            "visualization of data is interesting for data scientists")
+string_pad <- str_pad(string, width = max(str_length(string)), side = "both", pad = " ")
+string_pad
+```
+```{r}
+str_trim(string_pad, side = "both")
+```
+
+```{r}
+# 나혼자.. 해봄
+str_pad(string, width = nchar(string[3]), side = "left", pad= " ")
+```
+

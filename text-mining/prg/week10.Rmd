@@ -1,0 +1,291 @@
+---
+title: "week10"
+subtitle : "tidy-text"
+---
+```{r}
+text <- c("Crash dieting is not the best way to lose weight. http://bbc.in/1G0J4Agg",
+          "A vegetar$ian diet excludes all animal flesh (meat, poultry, seafood).",
+          "Economists surveyed by Refinitiv expect the economy added 160,000 jobs.")
+source <- c("BBC","FOX","CNN")
+```
+ 
+```{r}
+library(dplyr)
+text.df <- tibble(source = source, text = text)
+text.df
+class(text.df)
+# tibble은 문자열을 factor로 바꾸지 않고 그대로 가져옴(!= dataframe)
+```
+<br>tokenization(단어중심)
+```{r}
+library(tidytext)
+```
+ 
+```{r}
+unnest_tokens(tbl = text.df, output = word , input = text)
+# 대소문자, 구두점 .. 자동으로 처리해줌
+```
+```{r}
+# %>% 파이프 연산자 - 직관적이라는 장점
+head(iris)
+iris %>% head()
+```
+
+
+```{r}
+# %>% 파이프연산자 - 직관적이라는 장점
+tidy.docs <- text.df %>% unnest_tokens(output = word, input = text) # 데이터는 지정해주었으니가 tbl 속성 안적어줘도됨
+tidy.docs
+```
+```{r}
+print(tidy.docs, n = 20) # 보여줄 개수. n = Inf : 끝까지 보여줌
+```
+ 
+```{r}
+# tidy text 의 장점  - base 패키지 사용 가능능
+tidy.docs %>% count(source) %>% arrange(desc(n))
+# tidy.docs에서 source를 기준으로 단어 count. count기준으로 정렬
+```
+ <br>
+ 불필요한 단어제거 => anti_join() : 양쪽에 다 들어있는 단어를 없애줌
+
+
+```{r}
+stop_words
+```
+```{r}
+# anti_join(tidy.docs, stop_words, by = "word")
+tidy.docs <- tidy.docs %>% anti_join(stop_words, by = "word")
+tidy.docs
+```
+
+```{r}
+# 없애고 싶은 단어
+word.removed <- tibble(word = c("http", "bbc.in", "1g0j4agg" ))
+word.removed
+```
+```{r}
+# tidy.docs에서 word.removed 지우기
+tidy.docs <- tidy.docs %>% anti_join(word.removed, by = "word")
+tidy.docs
+```
+```{r}
+tidy.docs$word # word만 확인
+```
+
+```{r}
+# 숫자 없애기
+grep("\\d+", tidy.docs$word)
+```
+
+```{r}
+# 숫자 없애기
+tidy.docs <- tidy.docs[-grep("\\d+", tidy.docs$word),]
+tidy.docs$word
+```
+
+```{r}
+text.df
+```
+
+```{r}
+# text.df(원래 처음의 데이터)에서 url 지우기
+text.df$text <- gsub("(f|ht)tp\\S+\\s*", "", text.df$text)
+text.df
+```
+```{r}
+# text.df에서 숫자지우기
+text.df$text <- gsub("\\d+", "", text.df$text)
+text.df$text
+```
+
+
+```{r}
+tidy.docs <- text.df %>% 
+  unnest_tokens(output = word, input = text)
+tidy.docs
+```
+```{r}
+# 토큰화, 숫자, url, 불용어 등 처리하고 tidy 텍스트, tidy text로 만들고 나서 작업해도 동일한 결과
+tidy.docs <- tidy.docs %>% anti_join(stop_words, by = "word")
+tidy.docs
+```
+```{r}
+# tidy.docs word에 "ian"이라는 단어 지우고 싶다
+tidy.docs$word <- gsub("ian", "", tidy.docs$word)
+tidy.docs$word
+```
+
+```{r}
+# economists를 economy로
+tidy.docs$word <- gsub("economists", "economy", tidy.docs$word)
+tidy.docs$word
+```
+
+
+<br>corpus->tidy로 변환 하는 작업을 연속적으로 수행
+```{r}
+library(tm)
+```
+
+```{r}
+# corpus만들기
+corpus.docs <- VCorpus(VectorSource(text))
+corpus.docs
+
+```
+```{r}
+# author 부여
+meta(corpus.docs, tag = "author", type = "local") <- source
+lapply(corpus.docs, meta)
+```
+
+
+```{r}
+# tibble로 바꾸기 - tidy()
+tidy(corpus.docs)
+```
+
+```{r}
+tidy(corpus.docs) %>% unnest_tokens(output = word, input = text) %>% select(source = author, word)
+
+```
+```{r}
+tidy(corpus.docs) %>% unnest_tokens(output = word, input = text) %>% select( datetimestamp, author) # select내용 바꿔서 확인
+```
+<br><br>***10-2***
+konlp로 명사중심 추출 -> 토큰화 -> 빈도분석
+
+```{r}
+library(dplyr)
+```
+
+
+```{r}
+#문재인 대통령 연설문 불러오기
+raw_moon <- readLines("../data/speech_moon.txt", encoding = "UTF-8")
+moon <- raw_moon %>%
+  as_tibble() %>%
+  mutate(president = "moon")
+moon
+```
+```{r}
+#박근혜 대통령 연설문 불러오기
+raw_park <- readLines("../data/speech_park.txt", encoding = "UTF-8")
+park <- raw_park %>%
+as_tibble() %>%
+  mutate(president = "park") # 열추가- 대통령구분을 위해
+park
+```
+
+```{r}
+# 두 데이터 합치기
+bind_speeches <- bind_rows(moon, park) %>%  # 행단위로합치기 -> 이름이 같아야함
+  select(president, value)
+bind_speeches
+```
+
+```{r}
+# 각 대통령별로 문장개수
+bind_speeches %>% count(president)
+```
+```{r}
+head(bind_speeches)
+tail(bind_speeches)
+```
+<br>기본적인 전처리
+```{r}
+library(stringr)
+speeches <- bind_speeches %>% 
+  mutate(value = str_replace_all(value, "[^가-힣]", " "), # 한글이 아닌 것은 공백처리
+         value = str_squish(value)) #공백지우기
+speeches
+```
+<br>
+토큰화
+
+```{r}
+library(tidytext)
+library(KoNLP)
+```
+
+```{r}
+speeches <- speeches %>% 
+  unnest_tokens(input = value, output = word,
+                token = extractNoun) # 명사 중심으로 추출해서 토큰화
+speeches
+```
+
+```{r}
+frequency <- speeches %>%  
+  count(president, word) %>% # 연설문 및 단어별 빈도
+  filter(str_count(word) > 1) # 두 글자 이상 단어 추출
+head(frequency)
+tail(frequency)
+```
+
+```{r}
+top10 <- frequency %>% 
+  group_by(president) %>% # president별로 분리
+  arrange(desc(n)) %>% head(10) %>% # 상위 10개추출
+  filter(president == "park") # 그 10개 중에 park대통령 데이터만 선택
+top10
+```
+
+```{r}
+# dplyr::slice_max() : 값이 큰 상위 n개의 행을 추출해 내림차순 정렬
+top10 <- frequency %>% 
+  group_by(president) %>% # president별로 분리
+  slice_max(n, n = 10)
+top10
+# => 대통령별로 10개씩 추출하고 내림차순 정렬
+```
+```{r}
+top10 <- frequency %>% 
+  group_by(president) %>% 
+  slice_max(n, n = 10, with_ties = F) # 동률 무시
+top10
+```
+```{r}
+library(ggplot2)
+```
+
+```{r}
+ggplot(top10, aes(x = reorder(word, n),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president) # 각각 대통령별로 그래프
+```
+```{r}
+# y축 통일하지 않고 각각 10개씩
+ggplot(top10, aes(x = reorder(word, n),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president, scales = "free_y")
+```
+```{r}
+# 축 재정리 - top10데이터는 대통령 전체를 이용해서 정렬한 데이터이다 보니 순서정렬이 제대로x
+ggplot(top10, aes(x = reorder_within(word, n, president),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president, scales = "free_y")
+```
+```{r}
+# tidytext::scalae_x_reordered() - 각단어 뒤의 범주 항목 제거
+ggplot(top10, aes(x = reorder_within(word, n, president),
+                  y = n,
+                  fill = president)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~ president, scales = "free_y") +
+  scale_x_reordered() +
+  labs(x = NULL) #+ # x축 삭제
+  # theme(text = element_text(family = "nanumgothic")) # 폰트
+```
+

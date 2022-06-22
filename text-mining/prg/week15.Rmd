@@ -1,0 +1,42 @@
+---
+title: "week15"
+---
+
+
+```{r}
+library(dplyr)
+library(readr)
+```
+<br>***2020년 8월 13일~21일 이낙연 이재명 경기도지사를 언급한 트위터 데이터***
+```{r}
+bind_tweet <- bind_rows(
+  read_csv("../data/tweet_nak.csv") %>% mutate(candidate = "이낙연"), # 각각의 필드를 만들어줌. 구분하기위해
+  read_csv("../data/tweet_jae.csv") %>% mutate(candidate = "이재명"))
+glimpse(bind_tweet)
+# => 총 13,928개의 트윗으로 구성된 데이터, 두 후보를 함께 언급한 트윗이 있을테니, 중복된 행 존재
+# => 5개의 열
+```
+```{r}
+# 텍스트 전처리
+# install.packages("lubridate")
+# install.packages("textclean")
+library(lubridate) #
+library(textclean) # url .. 쉽게 제거하는 패키지
+library(stringr)
+set.seed(1234)
+```
+
+```{r}
+tweet <- bind_tweet %>%
+  mutate(text = replace_tag(str_to_lower(text)), # id태그 제거
+         text = str_squish(replace_html(text)), # html 특수 문자 제거
+         date = date(created_at)) %>% # 날짜 변수 생성
+  filter(!str_detect(text, "https://")) %>% # 광고 트윗 제거
+  group_by(candidate) %>% # 중복 글 제거 - 두 후보를 모두 언급한 트윗
+  distinct(text, .keep_all = T) %>%
+  group_by(candidate, date, screen_name) %>% # 사용자별 하루 최대 5개 추출 - 조작.. 등등 있을수도 있으니까
+  slice_sample(n = 5) %>%
+  ungroup()
+glimpse(tweet) 
+```
+

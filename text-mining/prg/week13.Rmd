@@ -1,0 +1,322 @@
+---
+title: "week13"
+---
+
+<hr>
+단어의 빈도수 분석
+
+공통적으로 등장하는 단어,  보편적인 단어 - 문서의 특징들을 표현하기 어렵다
+
+보편적으로 등장하는 단어에는 패널티를 주는 형태
+
+단어빈도(TF)*역문서빈도(IDF)
+
+
+ex. 10000개 단어. 1000개의 문서.
+
+coffee 단어 400번 출현 => tf 400/10000
+
+coffee 포함 문서 10개. => df 10/1000
+
+IDF => log(1000/10)
+
+TFIDF => 400/10000 * log(1000/100) = 0.08<hr>
+
+
+```{r}
+library(quanteda)
+library(tidytext)
+library(tibble)
+library(dplyr)
+
+```
+
+```{r}
+us.president.address <- tidy(data_corpus_inaugural) %>%  # tibble 형태로 바꾸기
+  filter(Year > 1990) %>%  # 1990년도 이상
+  group_by(President, FirstName) %>% 
+  summarise_all(list(~trimws(paste(., collapse = " ")))) %>%  # 각각의 대통령별로 연설문을 붙임. 같은 대통령이면 하나의 텍스트로.
+  arrange(Year) %>% 
+  ungroup()
+us.president.address
+```
+
+
+```{r}
+# corpus로 만들기
+# corpus - content, meta(데이터 구조화)
+# dataframe으로 된 것들을 읽어오기 위해 DataframeSource()
+```
+
+
+```{r}
+library(tm)
+```
+
+```{r}
+# DataframeSource()에는 doc_id, text항목 필요
+us.president.address <- us.president.address %>% 
+  select(text, everything()) %>%
+  add_column(doc_id = 1:nrow(.), .before = 1)
+us.president.address
+
+```
+
+```{r}
+address.corpus <- VCorpus(DataframeSource(us.president.address))
+```
+
+```{r}
+address.corpus
+```
+
+```{r}
+# content확인
+# lapply(address.corpus[1], content)
+```
+
+```{r}
+# 전처리
+address.corpus <- tm_map(address.corpus, content_transformer(tolower)) # 소문자로
+Mystopwords <- c(stopwords("english"), c("must", "will", "can"))
+address.corpus <- tm_map(address.corpus, removeWords, Mystopwords) # 불용어제거
+address.corpus <- tm_map(address.corpus, removePunctuation) # 문장부호삭제
+address.corpus <- tm_map(address.corpus, removeNumbers) #숫자삭제
+address.corpus <- tm_map(address.corpus, stripWhitespace) # 공백삭제
+address.corpus <- tm_map(address.corpus, content_transformer(trimws)) # 앞뒤여백삭제
+# address.corpus <- tm_map(address.corpus, content_transformer(gsub), # 동의어 처리
+                         # pattern = "america|american|americans|america",
+                         # replacement = "america")
+
+```
+
+
+<br>DTM
+```{r}
+address.dtm = DocumentTermMatrix(address.corpus)
+```
+
+```{r}
+inspect(address.dtm)
+```
+```{r}
+termfreq <- colSums(as.matrix(address.dtm))
+```
+
+
+```{r}
+length(termfreq)
+```
+```{r}
+termfreq[head(order(termfreq, decreasing = TRUE), 10)]
+```
+
+```{r}
+findFreqTerms(address.dtm, lowfreq = 40, highfreq = 80)
+```
+
+```{r}
+termfreq.df <- data.frame(word = names(termfreq), frequency = termfreq)
+head(termfreq.df)
+```
+```{r}
+Docs(address.dtm)
+row.names(address.dtm) <- c("Clinton", "Bush", "Obama", "Trump", "Biden")
+Docs(address.dtm)
+```
+
+<br>워드클라우드
+```{r}
+set.seed(123)
+library(wordcloud)
+```
+
+```{r}
+head(termfreq)
+```
+
+```{r}
+wordcloud(words = names(termfreq), freq = termfreq,
+          scale = c(3,0.2), min.freq = 10,
+          rot.per = 0.1, random.order = FALSE,
+          colors = brewer.pal(6, "Dark2"))
+```
+```{r}
+# 각각대통령별로 어떤 단어들이 많이 등장?
+address.tf <- tidy(address.dtm) # tidytext형태로
+address.tf
+```
+
+```{r}
+address.tf <- address.tf %>% 
+  mutate(document = factor(document, levels = c("Clinton", "Bush", "Obama", "Trump", "Biden"))) %>%
+  arrange(desc(count)) %>%  # count기준으로 정렬
+  group_by(document) %>%
+  top_n(n = 10, wt = count) %>% # document(각각의 대통령)별로 상위 10개 단어
+  ungroup()
+address.tf
+```
+```{r}
+library(ggplot2)
+# 각각의 대통령별로 그림
+ggplot(address.tf,
+       aes(term,count,fill=document))+
+  geom_col(show.legend=FALSE)+
+  facet_wrap(~document, ncol=2,scales="free")+
+  labs(x=NULL, y="Term Frequency count")+
+  coord_flip()
+```
+
+```{r}
+ggplot(address.tf,
+       aes(reorder_within(x=term,by=count,within=document),y=count,fill=document))+ # reorder_within() : 각각에 대해서, 각각의 그래프에서 order를 해줘라
+  geom_col(show.legend = FALSE)+
+  facet_wrap(~document, ncol=2,scales="free")+
+  scale_x_reordered()+ #reorder_within()을 쓰면 같이 써줘야함
+  labs(x=NULL, y="Term Frequency count")+
+  coord_flip()
+```
+
+
+***TF-IDF***
+DocumetTermMatrix를 만들때부터 달라짐. 나머지는 동일
+<br>->Weighting을 바꾸면됨
+
+```{r}
+address.dtm2 <- DocumentTermMatrix(address.corpus,
+                                   control = list(weighting = weightTfIdf))
+```
+
+```{r}
+inspect(address.dtm2)
+# => Weighting이 바뀐 것 확인 !!
+```
+
+```{r}
+row.names(address.dtm2)
+row.names(address.dtm2) <- c("Clinton", "Bush", "Obama", "Trump", "Biden")
+Docs(address.dtm2)
+```
+
+```{r}
+address.tfidf <- address.dtm2 # tidytext형태로.
+```
+
+```{r}
+address.tfidf <- tidy(address.dtm2) %>% 
+  mutate(tf_idf = count, count = NULL)
+address.tfidf
+# => tfidf값이 들어가있다
+```
+
+```{r}
+address.tfidf <- address.tfidf %>% 
+  mutate(document = factor(document, levels = c("Clinton", "Bush", "Obama", "Trump", "Biden"))) %>%
+  arrange(desc(tf_idf)) %>% 
+  group_by(document) %>%
+  top_n(n = 10, wt = tf_idf) %>%
+  ungroup()
+address.tfidf
+# => 5명의 대통령에서, tfidf값 상위10개 추출
+```
+
+```{r}
+ggplot(address.tfidf,
+       aes(reorder_within(x=term,by=tf_idf,within=document),y=tf_idf,fill=document))+
+  geom_col(show.legend = FALSE)+
+  facet_wrap(~document, ncol=2,scales="free")+
+  scale_x_reordered()+
+  labs(x=NULL, y="tf_idf")+
+  coord_flip()
+```
+*** 13-2 ***
+tidy-text 기반 TF-IDF
+
+```{r}
+us.president.address <- tidy(data_corpus_inaugural) %>% 
+  filter(Year > 2000) %>% 
+  group_by(President, FirstName) %>% 
+  summarise_all(list(~trimws(paste(., collapse = " ")))) %>%
+  arrange(Year) %>% 
+  ungroup()
+us.president.address
+```
+```{r}
+# tidy text로만들기
+```
+
+```{r}
+# 단어를 기준으로 토큰화
+address.words <- us.president.address %>% 
+  unnest_tokens(output = word, input = text)
+address.words
+```
+
+```{r}
+# 전처리하기
+address.words <- address.words %>% 
+  anti_join(stop_words, by="word") %>% #불용어제거
+  filter(!grepl(patter = "\\d+", word)) %>%  #숫자제거
+  mutate(word = gsub(pattern = "'", replacement ="",word)) %>% #공백제거
+  mutate(word = gsub(pattern = "america|americas|american|americans",
+                     replacement = "america", word)) %>% # 동의어처리
+  count(President, word, sort = TRUE, name =  'count') %>% #단어 빈도 수 계산
+  ungroup()
+address.words
+```
+```{r}
+# 단어빈도 시각화
+address.words %>% 
+  group_by(word) %>% 
+  summarise(count = sum(count)) %>% 
+  arrange(desc(count)) %>% 
+  top_n(n = 10, wt = count) %>% # => 상위10개 단어 추출
+  ggplot(aes(reorder(word, count), count)) +
+  geom_col(color = "dimgray", fill = "salmon", width = 0.6, show.legend = FALSE) +
+  # theme(axis.test.x = element_text(angle = 45, hjust = 1)) +
+  geom_text(aes(label = count), size = 3.5, color = "black", vjust = 1) +
+  labs(x = NULL, y ='Term Frequency (count)') +
+  coord_flip()
+```
+```{r}
+# tf-idf계산 - bind_tf_idf() 함수
+address.words <- address.words %>% 
+  bind_tf_idf(term = word, document = President, n = count)
+address.words
+# => tf, idf, tf_idf 값이 계산됨
+```
+
+```{r}
+# 시각화를통해 tf-idf 순위 확인
+address.words %>% 
+  arrange(desc(tf_idf)) %>% 
+  mutate(President = factor(President,
+                            levels = c("Clinton", "Bush", "Obama", "Trump", "Biden"))) %>% 
+  group_by(President) %>% 
+  top_n(7, wt = tf_idf) %>% 
+  ungroup() %>% 
+  ggplot(aes(reorder_within(word, tf_idf, President), tf_idf, fill = President)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~President, ncol = 2, scales = "free") +
+  scale_x_reordered() +
+  labs(x = NULL, y = "Term Frequency-Inverse Document Frequency") +
+  coord_flip()
+```
+
+```{r}
+# tf-idf 상위 7개 단어 확인
+address.words %>% 
+  arrange(desc(tf)) %>% 
+  mutate(President = factor(President,
+                            levels = c("Clinton", "Bush", "Obama", "Trump", "Biden"))) %>% 
+  group_by(President) %>% 
+  top_n(7, wt = tf) %>% 
+  ungroup() %>% 
+  ggplot(aes(reorder_within(word, tf, President), tf, fill = President)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~President, ncol = 2, scales = "free") +
+  scale_x_reordered() +
+  labs(x = NULL, y = "Term Frequency(proportion)") +
+  coord_flip()
+```
+
